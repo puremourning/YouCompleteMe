@@ -35,13 +35,13 @@ For a manual installation you should run this in the plugin's directory:
 ❯❯❯ ./install.sh --clang-completer --system-libclang
 ```
 
-- Depending on you system (OS X for example), you may need to set some flags for
-  the build to pick the correct Clang headers and binary. For a Clang
-  installation at `/opt/local` you could do:
+Depending on your system (OS X for example), you may need to set some flags so
+that the build picks the correct Clang headers and binary. For a Clang
+installation at `/opt/local` you may try:
 
-  ```
-  ❯❯❯ CPATH=/opt/local/include CC=/opt/local/bin/clang ./install.sh --clang-completer --system-libclang
-  ```
+```
+❯❯❯ CPATH=/opt/local/include CC=/opt/local/bin/clang ./install.sh --clang-completer --system-libclang
+```
 
 Particularities
 ---------------
