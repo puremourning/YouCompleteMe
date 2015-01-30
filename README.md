@@ -35,18 +35,26 @@ For a manual installation you should run this in the plugin's directory:
 ❯❯❯ ./install.sh --clang-completer --system-libclang
 ```
 
+- Depending on you system (OS X for example), you may need to set some flags for
+  the build to pick the correct Clang headers and binary. For a Clang
+  installation at `/opt/local` you could do:
+
+  ```
+  ❯❯❯ CPATH=/opt/local/include CC=/opt/local/bin/clang ./install.sh --clang-completer --system-libclang
+  ```
+
 Particularities
 ---------------
 
-- There're no default mapping for `<TAB>` and `<S-TAB>` to browse the
+- There are no default mappings for `<TAB>` and `<S-TAB>` to browse the
 popup-menu. Since this fork enables whitespace to come after triggers while
 still showing up the popup-menu, `<TAB>` and `<S-TAB>` have a better use
 producing whitespace by default than browsing the popup-menu. By default
-the arrow keys are enabled, and there's also the original vim keys for browsing
+the arrow keys are enabled, and there's also the original Vim keys for browsing
 the popup-menu: `<C-N>` and `<C-P>`.
 
 - For argument hints a little bit faster than official Clang take a look at
-  [this change][faster-candidates] I'm mantaining at
+  [this change][faster-candidates] I'm maintaining at
   [a branch in my own fork][oblitum-clang]. You can use it if you care about
   some milliseconds.
 
