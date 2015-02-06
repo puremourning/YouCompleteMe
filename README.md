@@ -93,12 +93,12 @@ If you have bug reports or feature suggestions, please use the [issue
 tracker][tracker].
 
 The latest version of the plugin is available at
-<https://github.com/oblitum/YouCompleteMe/>.
+<https://github.com/oblitum/YouCompleteMe/>.  
 The author's homepage is <http://nosubstance.me>.
 
 The latest version of the original plugin is available at
-<http://valloric.github.io/YouCompleteMe/>.
-The original author's homepage is <http://val.markovic.io>.
+<http://valloric.github.io/YouCompleteMe/>.  
+The original author's homepage is <http://val.markovic.io>.  
 
 Project Management
 ------------------
@@ -118,8 +118,8 @@ The original notice on this section was:
 License
 -------
 
-This software is licensed under the [GPL v3 license][gpl].
-© 2015 Francisco Lopes.
+This software is licensed under the [GPL v3 license][gpl].  
+© 2015 Francisco Lopes.  
 © 2013 Google Inc.
 
 [YouCompleteMe]: https://github.com/Valloric/YouCompleteMe
