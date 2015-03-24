@@ -16,7 +16,10 @@ Installation
 
 ### Requirements
 
-- Clang 3.7 revision 227309 (there's no Clang 3.7 release yet).
+- Clang 3.7 revision 227309
+  - There's no Clang 3.7 release yet but you can grab a bundle through [llvm.org/apt](http://llvm.org/apt)
+    or a [Cling Nightly](https://ecsft.cern.ch/dist/ec/dist/cling/current/) (or
+    build from sources like a man... or woman!).
 - Better on Vim 7.3.867 or newer.
 
 Installation is only supported through a system's libclang.
@@ -41,6 +44,15 @@ installation at `/opt/local` you may try:
 
 ```
 ❯❯❯ CPATH=/opt/local/include CC=/opt/local/bin/clang ./install.sh --clang-completer --system-libclang
+```
+
+I have some Linux systems where I put the entire LLVM toolchain in its own root,
+like `/opt/llvm`. I do this for Ubuntu and Arch. For some reason, with this
+setup I'm unable get the `./install.sh` script working, so I build the libclang
+support using the CMake files instead:
+
+```
+❯❯❯ CC=clang CXX=clang++ cmake -DUSE_CLANG_COMPLETER=ON -DPATH_TO_LLVM_ROOT=$PWD/third_party/ycmd/cpp
 ```
 
 Particularities
