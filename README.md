@@ -48,11 +48,11 @@ installation at `/opt/local` you may try:
 
 I have some Linux systems where I put the entire LLVM toolchain in its own root,
 like `/opt/llvm`. I do this for Ubuntu and Arch. For some reason, with this
-setup I'm unable get the `./install.sh` script working, so I build the libclang
-support using the CMake files instead:
+setup I'm unable to get the `./install.sh` script working, so I build the
+libclang support using CMake instead:
 
 ```
-❯❯❯ CC=clang CXX=clang++ cmake -DUSE_CLANG_COMPLETER=ON -DPATH_TO_LLVM_ROOT=$PWD/third_party/ycmd/cpp
+❯❯❯ CC=clang CXX=clang++ cmake -DUSE_CLANG_COMPLETER=ON -DPATH_TO_LLVM_ROOT=/opt/llvm $PWD/third_party/ycmd/cpp
 ```
 
 Particularities
