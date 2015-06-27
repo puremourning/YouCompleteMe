@@ -655,7 +655,10 @@ You may want to map this command to a key; try putting `nnoremap <F5>
 ### The `:YcmDiags` command
 
 Calling this command will fill Vim's `locationlist` with errors or warnings if
-any were detected in your file and then open it.
+any were detected in your file and then open it. If a given error or warning can
+be fixed by a call to `:YcmCompleter FixIt`, then ` (FixIt available)` is
+appended to the error or warning text. See the `FixIt` completer subcommand for
+more information.
 
 The `g:ycm_open_loclist_on_ycm_diags` option can be used to prevent the location
 list from opening, but still have it filled with new diagnostic data. See the
@@ -814,6 +817,36 @@ context of the second `C::f` is the translation unit.
 For global declarations, the semantic parent is the translation unit.
 
 NOTE: Causes reparsing of the current translation unit.
+
+Supported in filetypes: `c, cpp, objc, objcpp`
+
+### The `FixIt` subcommand
+
+Where available, attempts to make changes to the buffer to correct the
+diagnostic closest to the cursor position.
+
+Completers which provide diagnostics may also provide trivial modifications to
+the source in order to correct the diagnostic. Examples include syntax errors
+such as missing trailing semi-colons, spurious characters, or other errors which
+the semantic engine can deterministically suggest corrections.
+
+If no fix-it is available for the current line, or there is no diagnostic on the
+current line, this command has no effect on the current buffer. If any
+modifications are made, the number of changes made to the buffer is echo'd and
+the user may use the editor's undo command to revert.
+
+When a diagnostic is available, and g:ycm_echo_current_diagnostic is set to 1,
+then the text `" (FixIt)"` is appended to the echo'd diagnostic. In any
+case, the text `" (FixIt available)"` is appended to the diagnostic text in
+the output of the `:YcmDiags` command for any diagnostics with available 
+fix-its.
+
+NOTE: Causes reparsing of the current translation unit.
+
+NOTE: After applying a fix-it, the cursor must be moved to update diagnostics,
+or the `:YcmForceCompileAndDiagnostics` command must be issued. However,
+repeated invocations of this command on a given line apply all diagnostics
+without requiring movement of the cursor or manual updating of the diagnostics.
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
@@ -1075,7 +1108,8 @@ Default: `1`
 ### The `g:ycm_echo_current_diagnostic` option
 
 When this option is set, YCM will echo the text of the diagnostic present on the
-current line when you move your cursor to that line.
+current line when you move your cursor to that line. If a `FixIt` is available
+for the current diagnostic, then `" (FixIt)"` is appended.
 
 This option is part of the Syntastic compatibility layer; if the option is not
 set, YCM will fall back to the value of the `g:syntastic_echo_current_error`

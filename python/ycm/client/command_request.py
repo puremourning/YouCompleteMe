@@ -36,6 +36,8 @@ class CommandRequest( BaseRequest ):
                                else 'filetype_default' )
     self._is_goto_command = (
         self._arguments and self._arguments[ 0 ].startswith( 'GoTo' ) )
+    self._is_fixit_command = (
+        self._arguments and self._arguments[ 0 ].startswith( 'FixIt' ) )
     self._response = None
 
 
@@ -69,9 +71,46 @@ class CommandRequest( BaseRequest ):
         vimsupport.JumpToLocation( self._response[ 'filepath' ],
                                     self._response[ 'line_num' ],
                                     self._response[ 'column_num' ] )
-    elif 'message' in self._response:
-      vimsupport.EchoText( self._response['message'] )
+    elif self._is_fixit_command:
+      if not len( self._response[ 'fixits' ] ):
+        vimsupport.EchoText( "No fixits found for current line" )
+      else:
+        fixit = self._response[ 'fixits' ][ 0 ]
 
+        # We need to track the difference in length, but ensuring we apply fixes
+        # in ascending order of insertion point.
+        fixit[ 'chunks' ].sort( key = lambda chunk:  (
+          str(chunk[ 'range' ][ 'start' ][ 'line_num' ])
+          + ','
+          + str(chunk[ 'range' ][ 'start' ][ 'column_num' ])
+        ))
+
+        # Remember the line number we're processing. -ve line number means we
+        # haven't processed any lines yet (by nature of being not equal to any
+        # real line number).
+        last_line = -1
+
+        # Counter of changes applied, so the user has a mental picture of the
+        # undo history this change is creating.
+        fixed = 0
+        for chunk in fixit[ 'chunks' ]:
+          if chunk[ 'range' ][ 'start' ][ 'line_num' ] != last_line:
+            # If this chunk is on a different line than the previous chunk,
+            # then ignore previous deltas (as offsets won't have changed).
+            last_line = chunk[ 'range' ][ 'start' ][ 'line_num' ]
+            delta = 0
+
+          delta += vimsupport.ReplaceChunk( chunk[ 'range' ][ 'start' ],
+                                            chunk[ 'range' ][ 'end' ],
+                                            chunk[ 'replacement_text' ],
+                                            delta)
+
+          fixed = fixed + 1
+
+        vimsupport.EchoTextVimWidth("FixIt applied " + str(fixed) + " changes")
+
+    elif 'message' in self._response:
+      vimsupport.EchoText( self._response[ 'message' ] )
 
 def SendCommandRequest( arguments, completer ):
   request = CommandRequest( arguments, completer )

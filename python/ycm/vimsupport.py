@@ -245,11 +245,15 @@ def ConvertDiagnosticsToQfList( diagnostics ):
     if line_num < 1:
       line_num = 1
 
+    text = diagnostic[ 'text' ]
+    if diagnostic.get( 'fixit_available', False ):
+      text += ' (FixIt available)'
+
     return {
       'bufnr' : GetBufferNumberForFilename( location[ 'filepath' ] ),
       'lnum'  : line_num,
       'col'   : location[ 'column_num' ],
-      'text'  : ToUtf8IfNeeded( diagnostic[ 'text' ] ),
+      'text'  : ToUtf8IfNeeded( text ),
       'type'  : diagnostic[ 'kind' ][ 0 ],
       'valid' : 1
     }
@@ -454,3 +458,27 @@ def GetBoolValue( variable ):
 def GetIntValue( variable ):
   return int( vim.eval( variable ) )
 
+
+# Replace the chunk of text specified by a contiguous range with the supplied
+# text.
+#
+# start and end are objects with line_num and column_num properties
+#
+# returns the delta (in characters) to the line length applied
+#
+# PreCondition: start and end are on the same line.
+def ReplaceChunk ( start, end, replacement_text, delta ):
+  if start['line_num'] != end['line_num']:
+    raise ValueError( "ReplaceChunk only works on a single line (for now)" )
+
+  # ycmd's results are all 1-based, but vim's/python's are all 0-based
+  # (so we do -1 on all of the values)
+  line_num  = start['line_num'] - 1
+  start_pos = (start['column_num'] - 1) + delta
+  end_pos   = (end['column_num'] - 1) + delta
+
+  line = vim.current.buffer[line_num]
+  fixed = line[:start_pos] + replacement_text + line[end_pos:]
+  vim.current.buffer[line_num] = fixed
+
+  return len(fixed) - len(line)
