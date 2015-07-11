@@ -23,7 +23,6 @@ set cpo&vim
 let s:script_folder_path = escape( expand( '<sfile>:p:h' ), '\' )
 let s:omnifunc_mode = 0
 
-let s:has_textchangedi = 0
 let s:old_cursor_position = []
 let s:cursor_moved = 0
 let s:moved_vertically_in_insert_mode = 0
@@ -99,8 +98,7 @@ function! youcompleteme#EnableCursorMovedAutocommands()
   augroup ycmcompletemecursormove
     autocmd!
     autocmd CursorMoved * call s:OnCursorMovedNormalMode()
-    let s:has_textchangedi = pyeval( 'vimsupport.VimVersionAtLeast("7.3.867")' )
-    if s:has_textchangedi
+    if pyeval( 'vimsupport.VimVersionAtLeast("7.3.867")' )
       autocmd TextChangedI * call s:OnTextChangedInsertMode()
     else
       autocmd CursorMovedI * call s:OnTextChangedInsertMode()
@@ -540,10 +538,6 @@ endfunction
 
 
 function! s:BufferTextChangedSinceLastMoveInInsertMode()
-  if s:has_textchangedi
-    return 1
-  endif
-
   if s:moved_vertically_in_insert_mode
     let s:previous_num_chars_on_current_line = -1
     return 0
