@@ -461,24 +461,48 @@ def GetIntValue( variable ):
 
 # Replace the chunk of text specified by a contiguous range with the supplied
 # text.
+# * start and end are objects with line_num and column_num properties
+# * the range is inclusive
+# * indices are all 1-based
+# * the returned character delta is the delta for the last line
 #
-# start and end are objects with line_num and column_num properties
-#
-# returns the delta (in characters) to the line length applied
-#
-# PreCondition: start and end are on the same line.
-def ReplaceChunk ( start, end, replacement_text, delta ):
-  if start['line_num'] != end['line_num']:
-    raise ValueError( "ReplaceChunk only works on a single line (for now)" )
+# returns the delta (in lines and characters) that any position after the end
+# needs to be adjusted by.
+def ReplaceChunk ( start, end, replacement_text, line_delta, char_delta,
+                   vim_buffer = None ):
+  if vim_buffer is None:
+    vim_buffer = vim.current.buffer
 
   # ycmd's results are all 1-based, but vim's/python's are all 0-based
   # (so we do -1 on all of the values)
-  line_num  = start['line_num'] - 1
-  start_pos = (start['column_num'] - 1) + delta
-  end_pos   = (end['column_num'] - 1) + delta
+  start_line = start[ 'line_num' ] - 1 + line_delta
+  end_line = end[ 'line_num' ] - 1 + line_delta
+  source_lines_count = end_line - start_line + 1
+  start_column = start[ 'column_num' ] - 1 + char_delta
+  end_column = end[ 'column_num' ] - 1
+  if source_lines_count == 1:
+    end_column += char_delta
 
-  line = vim.current.buffer[line_num]
-  fixed = line[:start_pos] + replacement_text + line[end_pos:]
-  vim.current.buffer[line_num] = fixed
+  replacement_lines = replacement_text.splitlines( False )
+  if len( replacement_lines ) == 0:
+    replacement_lines = [ '' ]
+  replacement_lines_count = len( replacement_lines )
 
-  return len(fixed) - len(line)
+  end_existing_text = vim_buffer[ end_line ][ end_column : ]
+  start_existing_text = vim_buffer[ start_line ][ : start_column ]
+
+  new_char_delta = ( len( replacement_lines[ -1 ] )
+                     - ( end_column - start_column ) )
+  if replacement_lines_count > 1:
+    if source_lines_count > 1:
+      new_char_delta -= start_column
+    else:
+      new_char_delta -= end_column - char_delta
+
+  replacement_lines[ 0 ] = start_existing_text + replacement_lines[ 0 ]
+  replacement_lines[ -1 ] = replacement_lines[ -1 ] + end_existing_text
+
+  vim_buffer[ start_line : end_line + 1 ] = replacement_lines[:]
+
+  new_line_delta = replacement_lines_count - source_lines_count
+  return ( new_line_delta, new_char_delta )

@@ -93,17 +93,21 @@ class CommandRequest( BaseRequest ):
         # Counter of changes applied, so the user has a mental picture of the
         # undo history this change is creating.
         fixed = 0
+        line_delta = 0
         for chunk in fixit[ 'chunks' ]:
           if chunk[ 'range' ][ 'start' ][ 'line_num' ] != last_line:
             # If this chunk is on a different line than the previous chunk,
             # then ignore previous deltas (as offsets won't have changed).
-            last_line = chunk[ 'range' ][ 'start' ][ 'line_num' ]
-            delta = 0
+            last_line = chunk[ 'range' ][ 'end' ][ 'line_num' ]
+            char_delta = 0
 
-          delta += vimsupport.ReplaceChunk( chunk[ 'range' ][ 'start' ],
+          (new_line_delta, new_char_delta) = vimsupport.ReplaceChunk(
+                                            chunk[ 'range' ][ 'start' ],
                                             chunk[ 'range' ][ 'end' ],
                                             chunk[ 'replacement_text' ],
-                                            delta)
+                                            line_delta, char_delta )
+          line_delta += new_line_delta
+          char_delta += new_char_delta
 
           fixed = fixed + 1
 
