@@ -23,6 +23,8 @@ import tempfile
 import json
 import signal
 import base64
+import requests_unixsocket
+import urllib
 from subprocess import PIPE
 from ycm import vimsupport
 from ycmd import utils
@@ -99,7 +101,6 @@ class YouCompleteMe( object ):
 
   def _SetupServer( self ):
     self._available_completers = {}
-    server_port = utils.GetUnusedLocalhostPort()
     # The temp options file is deleted by ycmd during startup
     with tempfile.NamedTemporaryFile( delete = False ) as options_file:
       hmac_secret = os.urandom( HMAC_SECRET_LENGTH )
@@ -110,29 +111,71 @@ class YouCompleteMe( object ):
 
       args = [ utils.PathToPythonInterpreter(),
                _PathToServerScript(),
-               '--port={0}'.format( server_port ),
                '--options_file={0}'.format( options_file.name ),
                '--log={0}'.format( self._user_options[ 'server_log_level' ] ),
                '--idle_suicide_seconds={0}'.format(
                   SERVER_IDLE_SUICIDE_SECONDS )]
 
-      if not self._user_options[ 'server_use_vim_stdout' ]:
+      if self._user_options[ 'server_use_unix_domain_socket' ]:
+        # note: we have to use '/tmp' here (heinously) because the hostname
+        # field is limited to 63 chars by IDNA (using the full path on a mac
+        # causes InvlalidURL to be thrown by requests). See
+        # requests_unixsocket/testutils.py
+        domain_socket = os.path.join( 
+                  '/tmp',
+                  'server_{0}.sock' ).format( os.getpid() )
+
+        server_stdout = os.path.join( 
+                  utils.PathToTempDir(), 
+                  'server_{0}.stdout' ).format( os.getpid() )
+        server_stderr = os.path.join( 
+                  utils.PathToTempDir(),
+                  'server_{0}.stderr' ).format( os.getpid() )
+
+        # Monkeypatch Requests so that we can use domain sockets.
+        #
+        # requests_unixsocket allows us to use http+unix:// and encode the
+        # path to the domain socket in the "server" part of the url.
+        # however, this requires using a specific Session implementation
+        # (requests_unixsocket.Session). However, rather than making that
+        # decision on case-by-case basis, and to allow us to continue to 
+        # use requests.get and requests.post directly as well as
+        # requests_futures, we monkeypatch the requests api to use unix sockets
+        requests_unixsocket.monkeypatch()
+
+        BaseRequest.server_location = ( 
+          'http+unix://{0}'.format( urllib.quote( domain_socket, '' ) ) )
+        BaseRequest.InitSession( True )
+
+        args.append( '--domain_socket={0}'.format( domain_socket ) )
+      else:
+        server_port = utils.GetUnusedLocalhostPort()
         filename_format = os.path.join( utils.PathToTempDir(),
                                         'server_{port}_{std}.log' )
 
-        self._server_stdout = filename_format.format( port = server_port,
-                                                      std = 'stdout' )
-        self._server_stderr = filename_format.format( port = server_port,
-                                                      std = 'stderr' )
-        args.append('--stdout={0}'.format( self._server_stdout ))
-        args.append('--stderr={0}'.format( self._server_stderr ))
+        server_stdout = filename_format.format( port = server_port,
+                                                std = 'stdout' )
+        server_stderr = filename_format.format( port = server_port,
+                                                std = 'stderr' )
+
+        BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
+        BaseRequest.InitSession( False )
+
+        args.append( '--port={0}'.format( server_port ) )
+
+      if not self._user_options[ 'server_use_vim_stdout' ]:
+        args.append('--stdout={0}'.format( server_stdout ))
+        args.append('--stderr={0}'.format( server_stderr ))
+
+        self._server_stderr = server_stderr
+        self._server_stdout = server_stdout
 
         if self._user_options[ 'server_keep_logfiles' ]:
           args.append('--keep_logfiles')
 
       self._server_popen = utils.SafePopen( args, stdin_windows = PIPE,
                                             stdout = PIPE, stderr = PIPE)
-      BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
+
       BaseRequest.hmac_secret = hmac_secret
 
     self._NotifyUserIfServerCrashed()

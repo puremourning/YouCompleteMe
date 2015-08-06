@@ -7,3 +7,6 @@
 [submodule "third_party/ycmd"]
 	path = third_party/ycmd
 	url = https://github.com/Valloric/ycmd
+[submodule "third_party/requests-unixsocket"]
+	path = third_party/requests-unixsocket
+	url = https://github.com/puremourning/requests-unixsocket.git

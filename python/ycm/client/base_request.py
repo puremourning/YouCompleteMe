@@ -21,12 +21,13 @@ import requests
 import urlparse
 from base64 import b64decode, b64encode
 from retries import retries
-from requests_futures.sessions import FuturesSession
 from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
 from ycm import vimsupport
 from ycmd.utils import ToUtf8Json
 from ycmd.hmac_utils import CreateRequestHmac, CreateHmac, SecureStringsEqual
 from ycmd.responses import ServerError, UnknownExtraConf
+from requests_futures.sessions import FuturesSession
+import requests_unixsocket
 
 _HEADERS = {'content-type': 'application/json'}
 _EXECUTOR = UnsafeThreadPoolExecutor( max_workers = 30 )
@@ -139,7 +140,23 @@ class BaseRequest( object ):
                            BaseRequest.hmac_secret ) )
     return headers
 
-  session = FuturesSession( executor = _EXECUTOR )
+  @staticmethod
+  def InitSession( use_domain_socket = False ):
+    # A FutuesSession which mounts the UnixAdapter to use unix domain sockets
+    class FuturesUnixSession( FuturesSession ):
+      def __init__( self, 
+                    url_scheme=requests_unixsocket.DEFAULT_SCHEME, 
+                    *args,
+                    **kwargs):
+        super( FuturesUnixSession, self ).__init__( *args, **kwargs )
+        self.mount( url_scheme, requests_unixsocket.adapters.UnixAdapter() )
+
+    if use_domain_socket:
+      BaseRequest.session = FuturesUnixSession( executor = _EXECUTOR )
+    else:
+      BaseRequest.session = FuturesSession( executor = _EXECUTOR )
+
+  session = None
   server_location = ''
   hmac_secret = ''
 
@@ -192,8 +209,23 @@ def _ValidateResponseObject( response ):
   return True
 
 def _BuildUri( handler ):
-  return urlparse.urljoin( BaseRequest.server_location, handler )
-
+  # this urlparse.urljoin() does not understand the http+unix:// syntax and just
+  # returns the handler, i.e.:
+  #   >>> import urlparse
+  #   >>> urlparse.urljoin( 'http+unix://test', 'test1' )
+  #   'test1'
+  #   >>> urlparse.urljoin( 'httpunix://test', 'test1' )
+  #   'test1'
+  #   >>> urlparse.urljoin( 'http://test', 'test1' )
+  #   'http://test/test1'
+  # 
+  # this is unfortunate, but unavoidable, so we just join with a slash in that
+  # case
+  url = urlparse.urljoin( BaseRequest.server_location, handler )
+  if url != handler:
+    return url
+  else:
+    return BaseRequest.server_location + '/' + handler
 
 SERVER_HEALTHY = False
 

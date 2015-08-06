@@ -130,6 +130,9 @@ let g:ycm_server_log_level =
 let g:ycm_server_keep_logfiles =
       \ get( g:, 'ycm_server_keep_logfiles', 0 )
 
+let g:ycm_server_use_unix_domain_socket =
+      \ get( g:, 'ycm_server_use_unix_domain_socket', 0 )
+
 let g:ycm_extra_conf_vim_data =
       \ get( g:, 'ycm_extra_conf_vim_data', [] )
 
