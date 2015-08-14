@@ -4,6 +4,7 @@ YouCompleteMe: a code-completion engine for Vim
 [![Build Status](https://travis-ci.org/Valloric/YouCompleteMe.png?branch=master)](https://travis-ci.org/Valloric/YouCompleteMe)
 
 - [Intro](#intro)
+- [Features](#features)
 - [Installation](#installation)
     - [Mac OS X](#mac-os-x-super-quick-installation)
     - [Ubuntu](#ubuntu-linux-x64-super-quick-installation)
@@ -100,6 +101,186 @@ engines in the future.
 You'll also find that YCM has filepath completers (try typing `./` in a file)
 and a completer that integrates with [UltiSnips][].
 
+Features
+--------
+
+This section contains an at-a-glance view of the features supported by 
+YouCompleteMe. A set of core features are available in all file types, and 
+different semantic features are available depending on the type of file 
+being modified.
+
+### Core features
+
+Core features apply to all file types, and comprise the following completers:
+
+- Identifier completer
+
+  Super-fast as-you-type identifier-based completion engine suggests 
+  identifiers from open buffers, tags files and syntax keywords.
+
+- File name and directory completer
+
+  Suggests file names and directories from your file system, including parsing 
+  of environment variables and shortcuts such as `~` for the user's home 
+  directory.
+
+- [UltiSnips][] completer
+
+  Offerings completion of whole snippets. See [FAQ](#faq) for additional 
+  information on UltiSnips integration.
+
+### Language Feature Summary
+
+This section offers an overview of some highlighted YCM semantic features and a
+summary of those features supported for each file type.  Later sections cover
+the behaviour of each feature in more detail.
+
+The following key IDE-like semantic features are available:
+
+- [Semantic completion](#general-semantic-completion-engine-usage)
+
+  Offers semantic-aware completion suggestions based on a language-specific
+  completion engine after typing a 
+  [semantic trigger](#the-g:ycm_semantic_triggers-option) 
+  (defaults listed for each file type below) or when requesting 
+  [forced semantic completion](#general-semantic-completion-engine-usage).
+
+- [Real-time diagnostics](#diagnostic-display)
+
+  Displays syntax and other semantic errors within the Vim user interface and
+  integrates with Vim's diagnostics systems.
+
+- [Code Navigation](#the-goto-subcommand)
+
+  Move to the definition/declaration/implementation of an identifier.
+
+- [Code Correction](#the-fixit-subcommand)
+
+  Automatically fix certain types of coding error.
+
+- [Type Information](#the-gettype-subcommand)
+
+  Display the type of an identifier, function, etc.
+
+Many completers support additional features and subcommands. For full details 
+and usage, please see the full [User Guide](#user-guide) and the 
+[list of completer subcommands](#ycmcompleter-subcommands).
+
+The following table summarises the available features according to file type:
+
+| Family     | File types           | Semantic completion | Real-time diagnostics | Code Navigation | Code Correction | Type Information |
+|------------|----------------------|:-------------------:|:---------------------:|:----------------|:---------------:|:----------------:|
+| C-family   | c, cpp, objc, objcpp | Yes | Yes | Definition, Declaration | Yes | Yes |
+| C-sharp    | cs                   | Yes | Yes | Definition, Declaration, Implementation | Yes | Yes |
+| Python     | python               | Yes | No | Definition, Declaration | No | No |
+| Go         | go                   | Yes | No | Definition | No | No |
+| TypeScript | typescript           | Yes | No | No | No | Yes |
+| Others     | Any `omnifunc`       | Yes | No | No | No | No |
+
+### C-family languages
+
+Applies to: C, C++, Objective C, Objective C++
+
+Default triggers:
+
+* C: `.`, `->`
+* C++, Objective C++: `.`, `->`, `::`
+* Objective C: `.`, `->`. Also method calls after whitespace like
+  `[myobject<whitespace>` and `[[myobject doSomething]<whitespace>` and 
+  calls at the beginning of a line like `myobject<whitespace>`
+
+Completion engine: [`libclang`][Clang]
+
+Supported features:
+
+* Fast and accurate semantic completion suggestions
+* Real-time diagnostics displayed alongside code
+* Go to declaration/definition within open files
+* Automatically fix certain types of errors
+* Get the type of a variable, function, etc.
+* Get the semantic parent of the current cursor position
+* `#include` file name and path suggestions based on include path
+
+### C-sharp
+
+Completion engine: [`Omnisharp-server`][omnisharp]
+
+Default triggers: `.`
+
+Supported features:
+
+* Fast and accurate semantic completion suggestions
+* Real-time diagnostics displayed alongside code
+* Go to declaration/definition/implementation within solution
+* Automatically fix certain types of errors
+* Get the type of a variable, function, etc.
+* Start/stop/restart the omnisharp server
+
+### Python
+
+Completion engine: [`Jedi`][jedi]
+
+Default triggers: `.`
+
+Supported features:
+
+* Fast and accurate semantic completion suggestions
+* Go to declaration/definition 
+
+### Go
+
+Completion engine: [`Gocode`][Gocode]
+
+Default triggers: `.`
+
+Supported features:
+
+* Fast and accurate semantic completion suggestions
+* Go to definition
+
+### TypeScript
+
+Completion engine: `tsserver`
+
+Default triggers: `.`
+
+Supported features:
+
+* Fast and accurate semantic completion suggestions
+* Get the type of a variable, function, etc.
+
+### Other file types
+
+Completion engine: `omnifunc`
+
+Default triggers: 
+
+* D: `.`
+* elixir: `.`
+* Erlang: `:` 
+* Java: `.`
+* JavaScript: `.`
+* Lua: `.`, `:`
+* Objective Caml: `->`, `.`
+* Perl 6: `.`
+* Perl: `->`
+* PHP: `->`, `::`
+* Ruby: `.`, `::`
+* Scala: `.`
+* Visual Basic: `.`
+
+If a default semantic trigger is not configured for your language, check out the
+[options](#the-g:ycm_semantic_triggers-option).
+
+Offers completion suggestions as returned by your Vim `omnifunc` and therefore 
+applies to all languages where an `omnifunc` is available. This includes many
+languages built-in to Vim and a whole host of languages via existing Vim 
+plug-ins. For example, full semantic completion can be obtained for Java 
+and many other languages using [Eclim][] in `omnifunc` mode.
+
+Supported features:
+
+* Completion suggestions based on `omnifunc`
 
 Installation
 ------------
