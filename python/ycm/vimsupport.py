@@ -124,6 +124,12 @@ def BufferIsVisible( buffer_number ):
   window_number = GetIntValue( "bufwinnr({0})".format( buffer_number ) )
   return window_number != -1
 
+def GetBufferFilepathForBnum( bnum ):
+  for buffer_object in vim.buffers:
+    if buffer_object.number == bnum:
+      return GetBufferFilepath( buffer_object )
+
+  raise ValueError( 'No buffer number: {0}'.format( bnum ) )
 
 def GetBufferFilepath( buffer_object ):
   if buffer_object.name:

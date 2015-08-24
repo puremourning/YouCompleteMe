@@ -29,7 +29,7 @@ def _EnsureBackwardsCompatibility( arguments ):
 
 
 class CommandRequest( BaseRequest ):
-  def __init__( self, arguments, completer_target = None ):
+  def __init__( self, arguments, completer_target = None, position = None ):
     super( CommandRequest, self ).__init__()
     self._arguments = _EnsureBackwardsCompatibility( arguments )
     self._completer_target = ( completer_target if completer_target
@@ -39,6 +39,7 @@ class CommandRequest( BaseRequest ):
     self._is_fixit_command = (
         self._arguments and self._arguments[ 0 ].startswith( 'FixIt' ) )
     self._response = None
+    self._position = position
 
 
   def Start( self ):
@@ -47,6 +48,9 @@ class CommandRequest( BaseRequest ):
       'completer_target': self._completer_target,
       'command_arguments': self._arguments
     } )
+    if self._position:
+      request_data.update( self._position )
+
     try:
       self._response = self.PostDataToHandler( request_data,
                                               'run_completer_command' )
@@ -125,11 +129,16 @@ class CommandRequest( BaseRequest ):
   def _HandleMessageResponse( self ):
     vimsupport.EchoText( self._response[ 'message' ] )
 
-def SendCommandRequest( arguments, completer ):
-  request = CommandRequest( arguments, completer )
+def SendCommandRequest( arguments,
+                        completer, 
+                        do_post_commands = True, 
+                        position=None ):
+  request = CommandRequest( arguments, completer, position=position )
   # This is a blocking call.
   request.Start()
-  request.RunPostCommandActionsIfNeeded()
+  if do_post_commands:
+    request.RunPostCommandActionsIfNeeded()
+
   return request.Response()
 
 

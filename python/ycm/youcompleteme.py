@@ -31,7 +31,9 @@ from ycm.diagnostic_interface import DiagnosticInterface
 from ycm.omni_completer import OmniCompleter
 from ycm import syntax_parse
 from ycm.client.ycmd_keepalive import YcmdKeepalive
-from ycm.client.base_request import BaseRequest, BuildRequestData
+from ycm.client.base_request import ( BaseRequest, 
+                                      BuildRequestData,
+                                      BuildPositionData )
 from ycm.client.completer_available_request import SendCompleterAvailableRequest
 from ycm.client.command_request import SendCommandRequest
 from ycm.client.completion_request import CompletionRequest
@@ -195,9 +197,37 @@ class YouCompleteMe( object ):
     return self._latest_completion_request
 
 
-  def SendCommandRequest( self, arguments, completer ):
+  def GetCommandMessageAtLocation( self, 
+                                   filepath,
+                                   line_num,
+                                   column_num,
+                                   arguments, 
+                                   completer ):
+
+    response = self.SendCommandRequest( 
+                  arguments,
+                  completer,
+                  do_post_commands = False,
+                  position = BuildPositionData( filepath=filepath,
+                                                line_num=line_num,
+                                                column_num=column_num ) )
+
+    if not response or not 'message' in response:
+      return 'request failed'
+
+    return response[ 'message' ]
+
+  def SendCommandRequest( self, 
+                          arguments, 
+                          completer, 
+                          do_post_commands = True,
+                          position = None ):
+    """ position is a dictionary containing line_num, column_num, filepath """
     if self.IsServerAlive():
-      return SendCommandRequest( arguments, completer )
+      return SendCommandRequest( arguments, 
+                                 completer, 
+                                 do_post_commands, 
+                                 position )
 
 
   def GetDefinedSubcommands( self ):

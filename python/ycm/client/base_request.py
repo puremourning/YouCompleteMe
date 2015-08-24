@@ -143,15 +143,17 @@ class BaseRequest( object ):
   server_location = ''
   hmac_secret = ''
 
+def BuildPositionData( filepath, line_num, column_num ):
+    return {
+        'line_num': line_num + 1,
+        'column_num': column_num + 1,
+        'filepath': filepath
+    }
 
 def BuildRequestData( include_buffer_data = True ):
   line, column = vimsupport.CurrentLineAndColumn()
   filepath = vimsupport.GetCurrentBufferFilepath()
-  request_data = {
-    'line_num': line + 1,
-    'column_num': column + 1,
-    'filepath': filepath
-  }
+  request_data = BuildPositionData( filepath, line, column )
 
   if include_buffer_data:
     request_data[ 'file_data' ] = vimsupport.GetUnsavedAndCurrentBufferData()
