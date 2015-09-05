@@ -84,7 +84,11 @@ function! youcompleteme#Enable()
     autocmd InsertLeave * call s:OnInsertLeave()
     autocmd InsertEnter * call s:OnInsertEnter()
     autocmd VimLeave * call s:OnVimLeave()
+    if exists( 'v:completed_item' )
+      autocmd CompleteDone * call s:OnCompleteDone()
+    endif
   augroup END
+
 
   " Calling these once solves the problem of BufReadPre/BufRead/BufEnter not
   " triggering for the first loaded file. This should be the last commands
@@ -720,6 +724,19 @@ function! youcompleteme#OmniComplete( findstart, base )
   endif
 endfunction
 
+function! s:OnCompleteDone()
+  if empty( 'v:completed_item' )
+    return
+  endif
+
+  let l:snippet = v:completed_item.userdata
+  if l:snippet == ''
+    return
+  endif
+
+  py ycm_state.ExpandAnonSnippet( vim.eval( 'v:completed_item.word' ),
+                                \ vim.eval( 'l:snippet' ) )
+endfunction
 
 function! youcompleteme#ServerPid()
   return pyeval( 'ycm_state.ServerPid()' )

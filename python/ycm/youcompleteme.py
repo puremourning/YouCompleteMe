@@ -396,6 +396,14 @@ class YouCompleteMe( object ):
         extra_conf_vim_data )
 
 
+  def ExpandAnonSnippet( self, trigger, snippet ):
+    if USE_ULTISNIPS_DATA:
+      vimsupport.EchoText( snippet )
+      UltiSnips_Manager.expand_anon( snippet, 
+                                     trigger=trigger,
+                                     options='i' )
+
+
 def _PathToServerScript():
   dir_of_current_script = os.path.dirname( os.path.abspath( __file__ ) )
   return os.path.join( dir_of_current_script, '../../third_party/ycmd/ycmd' )

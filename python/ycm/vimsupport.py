@@ -521,3 +521,7 @@ def ReplaceChunk( start, end, replacement_text, line_delta, char_delta,
 
   new_line_delta = replacement_lines_count - source_lines_count
   return ( new_line_delta, new_char_delta )
+
+
+def AddAutoCommand( trigger, cmd ):
+  vim.command( 'autocmd ' + trigger + ' * :' + cmd + '<cr>' )

@@ -18,6 +18,7 @@
 # along with YouCompleteMe.  If not, see <http://www.gnu.org/licenses/>.
 
 from ycmd.utils import ToUtf8IfNeeded
+from ycm import vimsupport
 from ycm.client.base_request import ( BaseRequest, JsonFromFuture,
                                       HandleServerException,
                                       MakeServerException )
@@ -46,15 +47,42 @@ class CompletionRequest( BaseRequest ):
     try:
       response = JsonFromFuture( self._response_future )
 
-      errors = response['errors'] if 'errors' in response else []
+      errors = response[ 'errors' ] if 'errors' in response else []
       for e in errors:
         HandleServerException( MakeServerException( e ) )
 
       return _ConvertCompletionResponseToVimDatas( response )
+
     except Exception as e:
       HandleServerException( e )
 
     return []
+
+
+
+
+def _CreateAutoSnippet( completion_data ):
+
+  # because python scoping rules are insane.
+  # http://stackoverflow.com/questions/4851463/python-closure-write-to-variable-in-parent-scope
+  tab_index = [ 0 ]
+
+  def _GetSnippetForChunk( chunk ):
+    snippet = ToUtf8IfNeeded( chunk[ 'insertion_text' ] )
+
+    # TODO: UltiSnips the only supported snippet manager
+    for chunk in chunk[ 'chunks' ]:
+      tab_index[ 0 ] += 1
+      snippet += '${{{0}:{1}}}'.format(
+              tab_index[ 0 ],
+              ToUtf8IfNeeded( _GetSnippetForChunk( chunk ) ) )
+
+    return snippet
+
+  return _GetSnippetForChunk( {
+    'insertion_text' : '',
+    'chunks' : completion_data[ 'chunks' ],
+  } )
 
 
 def _ConvertCompletionDataToVimData( completion_data ):
@@ -77,9 +105,13 @@ def _ConvertCompletionDataToVimData( completion_data ):
   if 'detailed_info' in completion_data:
     vim_data[ 'info' ] = ToUtf8IfNeeded( completion_data[ 'detailed_info' ] )
 
+  if ( 'chunks' in completion_data and completion_data[ 'chunks' ] ):
+    vim_data[ 'userdata' ] = _CreateAutoSnippet( completion_data )
+
   return vim_data
 
 
 def _ConvertCompletionResponseToVimDatas( response_data ):
   return [ _ConvertCompletionDataToVimData( x )
            for x in response_data[ 'completions' ] ]
+
