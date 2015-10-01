@@ -301,10 +301,24 @@ endfunction
 
 " Needed so that YCM is used instead of Syntastic
 function! s:TurnOffSyntasticForCFamily()
-  let g:syntastic_cpp_checkers = []
-  let g:syntastic_c_checkers = []
-  let g:syntastic_objc_checkers = []
-  let g:syntastic_objcpp_checkers = []
+python << EOF
+
+whitelist = { 'cppcheck': 1 }
+
+def FilterGlobalList( var_name, whitelist ):
+  configured_values = vim.vars.get( var_name )
+
+  vim.vars[ var_name ] = (
+    [ x for x in configured_values if whitelist.has_key( x ) ]
+    if configured_values
+    else [] )
+
+FilterGlobalList( 'syntastic_cpp_checkers', whitelist )
+FilterGlobalList( 'syntastic_c_checkers', whitelist )
+FilterGlobalList( 'syntastic_objc_checkers', whitelist )
+FilterGlobalList( 'syntastic_objcpp_checkers', whitelist )
+
+EOF
 endfunction
 
 
