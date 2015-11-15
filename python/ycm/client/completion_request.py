@@ -21,6 +21,7 @@ from ycmd.utils import ToUtf8IfNeeded
 from ycm.client.base_request import ( BaseRequest, JsonFromFuture,
                                       HandleServerException,
                                       MakeServerException )
+from ycm import base
 
 TIMEOUT_SECONDS = 0.5
 
@@ -60,6 +61,9 @@ class CompletionRequest( BaseRequest ):
   def Response( self ):
     return _ConvertCompletionDatasToVimDatas( self.RawResponse() )
 
+
+  def CompletionStartColumn( sefl ):
+    return base.CompletionStartColumn()
 
 def ConvertCompletionDataToVimData( completion_data ):
   # see :h complete-items for a description of the dictionary fields

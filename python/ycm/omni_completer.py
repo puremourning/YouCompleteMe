@@ -66,15 +66,18 @@ class OmniCompleter( Completer ):
       return []
 
 
+  def CompletionStartColumn( self ):
+    if not self._omnifunc:
+      return -1
+
+    return int( vim.eval( self._omnifunc + '(1,"")' ) )
+
+
   def ComputeCandidatesInner( self, request_data ):
     if not self._omnifunc:
       return []
 
     try:
-      return_value = int( vim.eval( self._omnifunc + '(1,"")' ) )
-      if return_value < 0:
-        return []
-
       omnifunc_call = [ self._omnifunc,
                         "(0,'",
                         vimsupport.EscapeForVim( request_data[ 'query' ] ),

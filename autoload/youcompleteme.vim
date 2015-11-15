@@ -1,3 +1,4 @@
+" from ycm import base
 " Copyright (C) 2011, 2012  Google Inc.
 "
 " This file is part of YouCompleteMe.
@@ -727,7 +728,7 @@ function! youcompleteme#Complete( findstart, base )
       return -2
     endif
     py ycm_state.CreateCompletionRequest()
-    return pyeval( 'base.CompletionStartColumn()' )
+    return pyeval( 'ycm_state.CompletionStartColumn()' )
   else
     return s:GetCompletions()
   endif
@@ -741,7 +742,7 @@ function! youcompleteme#OmniComplete( findstart, base )
     endif
     let s:omnifunc_mode = 1
     py ycm_state.CreateCompletionRequest( force_semantic = True )
-    return pyeval( 'base.CompletionStartColumn()' )
+    return pyeval( 'ycm_state.CompletionStartColumn()' )
   else
     return s:GetCompletions()
   endif

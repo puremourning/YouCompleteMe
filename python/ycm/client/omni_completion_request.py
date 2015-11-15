@@ -36,3 +36,17 @@ class OmniCompletionRequest( CompletionRequest ):
 
   def Response( self ):
     return self._results
+
+
+  def CompletionStartColumn( self ):
+    # In order for the behaviour of calling 'omnifunc' to be completely
+    # compatible with when called from Vim, we must call the omnifunc with the
+    # first parameter set to 1 (findstart) during the callback *we* get from vim
+    # when findstart is 1. It's not 100% clear why that is, but I believe it is
+    # due to the state of the buffer. When Vim calls with 'a:findstart=1', the
+    # 'query' is still in the buffer (and getline('.')) includes it. However,
+    # when called with 'a:findstart=0', the 'query' string (everything after the
+    # 'start' column) is *removed* from the buffer. So many omnifuncs expect
+    # that the query is in the buffer during the first call (as do we in fact),
+    # and not the second call.
+    return self._omni_completer.CompletionStartColumn()

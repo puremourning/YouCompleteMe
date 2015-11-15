@@ -182,6 +182,10 @@ class YouCompleteMe( object ):
     self._SetupServer()
 
 
+  def CompletionStartColumn( self ):
+    return self._latest_completion_request.CompletionStartColumn()
+
+
   def CreateCompletionRequest( self, force_semantic = False ):
     request_data = BuildRequestData()
     request_data[ 'working_dir' ] = os.getcwd()
