@@ -184,6 +184,11 @@ class YouCompleteMe( object ):
 
   def CreateCompletionRequest( self, force_semantic = False ):
     request_data = BuildRequestData()
+    request_data[ 'working_dir' ] = os.getcwd()
+    if force_semantic:
+      request_data[ 'force_semantic' ] = True
+    self._AddExtraConfDataIfNeeded( request_data )
+
     if ( not self.NativeFiletypeCompletionAvailable() and
          self.CurrentFiletypeCompletionEnabled() ):
       wrapped_request_data = RequestWrap( request_data )
@@ -192,11 +197,6 @@ class YouCompleteMe( object ):
             self._omnicomp, wrapped_request_data )
         return self._latest_completion_request
 
-    request_data[ 'working_dir' ] = os.getcwd()
-
-    self._AddExtraConfDataIfNeeded( request_data )
-    if force_semantic:
-      request_data[ 'force_semantic' ] = True
     self._latest_completion_request = CompletionRequest( request_data )
     return self._latest_completion_request
 

@@ -51,6 +51,8 @@ class OmniCompleter( Completer ):
   def ShouldUseNowInner( self, request_data ):
     if not self._omnifunc:
       return False
+    if 'force_semantic' in request_data and request_data[ 'force_semantic' ]:
+      return True
     return super( OmniCompleter, self ).ShouldUseNowInner( request_data )
 
 
