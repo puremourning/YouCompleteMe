@@ -24,6 +24,11 @@ let s:script_folder_path = escape( expand( '<sfile>:p:h' ), '\' )
 let s:omnifunc_mode = 0
 let s:defer_omnifunc = 1
 
+" We only want to start the server and set up all the autocommands once. This
+" allows delayed/on-demand loading of YouCompleteMe, where the `VimEnter` event
+" is not received (such as via vim-plug async. loading).
+let s:ycm_initialised = 0
+
 let s:old_cursor_position = []
 let s:cursor_moved = 0
 let s:moved_vertically_in_insert_mode = 0
@@ -39,6 +44,13 @@ let s:diagnostic_ui_filetypes = {
 
 
 function! youcompleteme#Enable()
+
+  if s:ycm_initialised
+    return
+  endif
+
+  let s:ycm_initialised = 1
+
   " When vim is in diff mode, don't run
   if &diff
     return
