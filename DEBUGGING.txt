@@ -1,0 +1,45 @@
+# Debugging with PyClewn
+
+If you want to debug the Python parts of the code, you can do this with PyClewn
+
+1. Write a test
+2. Create a virtualenv for pyclewn:
+
+        $ virtualenv ~/venvs/pyclewn
+        $ source ~/venvs/pyclewn/bin/activate
+
+3. Install pyclewn
+
+        $ pip install pyclewn
+
+4. Install test requirements
+
+        $ pip install -r test_requirements.txt
+
+5. Set the PYTHONPATH to the value calculated by `./run_tests` so that `nose`
+   can find the modules when you run it.
+
+        $ export PYTHONPATH=`./run_tests --dump-path`
+
+6. Start *terminal* Vim. This does *not* work in GUI Vim.
+
+        $ tvim python/ycm/vimsupport.py
+
+7. Start PyClewn for pdb debugging. Note: You must you *absolute* paths for
+   all arguments, which are:
+
+ - The path to nosetests (`~/venvs/pyclewn/bin/nosetests`)
+ - The path to YCM's `python` directory
+
+        :Pyclewn pdb /Users/ben/venvs/pyclewn/bin/nosetests -v -w /Users/ben/.vim/bundle/YouCompleteMe/python/ ycm.client.tests.command_request_test
+
+
+8. Use PyClewn according to the docs. e.g.
+
+        :e python/ycm/vimsupport.py
+        :Cmapkeys
+        <...>
+        <C-B>
+        <C-N>
+        <S>
+        etc.
