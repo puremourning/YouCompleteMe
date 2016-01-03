@@ -47,6 +47,9 @@ def ParseArguments():
   parser = argparse.ArgumentParser()
   parser.add_argument( '--skip-build', action = 'store_true',
                        help = 'Do not build ycmd before testing.' )
+  parser.add_argument( '--dump-path', action = 'store_true',
+                       help = 'Dump the PYTHONPATH required to run tests '
+                              'manually, then exit.' )
 
   return parser.parse_known_args()
 
@@ -70,6 +73,11 @@ def NoseTests( extra_args ):
 
 def Main():
   ( parsed_args, extra_args ) = ParseArguments()
+
+  if parsed_args.dump_path:
+    print( os.environ[ 'PYTHONPATH' ] )
+    exit()
+
   RunFlake8()
   BuildYcmdLibs( parsed_args )
   NoseTests( extra_args )
