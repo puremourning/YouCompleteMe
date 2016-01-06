@@ -70,6 +70,8 @@ function! youcompleteme#Enable()
 
   if g:ycm_show_diagnostics_ui
     call s:TurnOffSyntasticForCFamily()
+    " TODO: Should we also turn off syntastic for JavaScript now that it has
+    " diagnistics
   endif
 
   call s:SetUpSigns()
