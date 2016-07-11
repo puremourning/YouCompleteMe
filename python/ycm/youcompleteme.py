@@ -127,6 +127,7 @@ class YouCompleteMe( object ):
     self._SetUpLogging()
     self._SetUpServer()
     self._ycmd_keepalive.Start()
+    self._ultisnips_snippet_cache = dict() # key = file name
 
 
   def _SetUpServer( self ):
@@ -831,13 +832,18 @@ class YouCompleteMe( object ):
 
 
   def _AddUltiSnipsDataIfNeeded( self, extra_data ):
-    # See :h UltiSnips#SnippetsInCurrentScope.
-    try:
-      vim.eval( 'UltiSnips#SnippetsInCurrentScope( 1 )' )
-    except vim.error:
-      return
+    file_name = vimsupport.GetCurrentBufferFilepath()
+    if file_name not in self._ultisnips_snippet_cache:
+      # See :h UltiSnips#SnippetsInCurrentScope.
+      try:
+        vim.eval( 'UltiSnips#SnippetsInCurrentScope( 1 )' )
+      except vim.error:
+        return
 
-    snippets = vimsupport.GetVariableValue( 'g:current_ulti_dict_info' )
+      self._ultisnips_snippet_cache = vimsupport.GetVariableValue( 
+          'g:current_ulti_dict_info' )
+
+    snippets = self._ultisnips_snippet_cache[ file_name ]
     extra_data[ 'ultisnips_snippets' ] = [
       { 'trigger': trigger,
         'description': snippet[ 'description' ] }
