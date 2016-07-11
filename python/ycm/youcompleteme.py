@@ -172,6 +172,14 @@ class YouCompleteMe:
     args.append( f'--stdout={ self._server_stdout }' )
     args.append( f'--stderr={ self._server_stderr }' )
 
+    env = os.environ
+
+    # We don't want a dodgy python path at Fidessa. Importantly, ReviewBoard
+    # includes a very slow json parser vs. the builtin Python 2.7 one.
+    if 'PYTHONPATH' in env:
+      env = os.environ.copy()
+      env.pop( 'PYTHONPATH' )
+
     if self._user_options[ 'keep_logfiles' ]:
       args.append( '--keep_logfiles' )
 
@@ -184,7 +192,7 @@ class YouCompleteMe:
 
     self._logger.debug( 'Starting ycmd with: %s', args )
 
-    self._server_popen = utils.SafePopen( args, stdin_windows = PIPE,
+    self._server_popen = utils.SafePopen( args, env=env, stdin_windows = PIPE,
                                           stdout = PIPE, stderr = PIPE )
 
 
