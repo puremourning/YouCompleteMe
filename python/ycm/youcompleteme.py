@@ -249,6 +249,8 @@ class YouCompleteMe( object ):
 
     if len( overloads ):
       vimsupport.ShowFunctionSignature( overloads )
+    else:
+     vimsupport.ClearFunctionSignature()
 
     return { 'words' : results, 'refresh' : 'always' }
 
