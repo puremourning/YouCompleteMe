@@ -1261,3 +1261,14 @@ def VimVersionAtLeast( version_string ):
     return actual_major_and_minor > matching_major_and_minor
 
   return GetBoolValue( "has( 'patch{0}' )".format( patch ) )
+
+
+def ShowFunctionSignature( overloads ):
+  signature = ( overloads[ 0 ][ 'extra_menu_info' ]
+                + ' '
+                + overloads[ 0 ][ 'menu_text' ] )
+  PostVimMessage( signature, warning = False, truncate = True  )
+
+
+def ClearFunctionSignature():
+  vim.command( 'redraw' )

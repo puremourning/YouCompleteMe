@@ -56,12 +56,16 @@ class CompletionRequest( BaseRequest ):
 
   def RawResponse( self ):
     if not self._response_future:
-      return { 'completions': [], 'completion_start_column': -1 }
+      return { 'completions': [],
+               'overloads': [],
+               'completion_start_column': -1 }
 
     response = self.HandleFuture( self._response_future,
                                   truncate_message = True )
     if not response:
-      return { 'completions': [], 'completion_start_column': -1 }
+      return { 'completions': [],
+               'overloads': [],
+               'completion_start_column': -1 }
 
     # Vim may not be able to convert the 'errors' entry to its internal format
     # so we remove it from the response.
@@ -71,14 +75,14 @@ class CompletionRequest( BaseRequest ):
       _logger.error( exception )
       DisplayServerException( exception, truncate_message = True )
 
-    return response
+    return _ExtractOverloads( response[ 'completions' ] )
 
 
   def Response( self ):
-    response = self.RawResponse()
+    ( response, overloads ) = self.RawResponse()
     response[ 'completions' ] = _ConvertCompletionDatasToVimDatas(
         response[ 'completions' ] )
-    return response
+    return ( response, overloads )
 
 
   def OnCompleteDone( self ):
@@ -132,6 +136,15 @@ class CompletionRequest( BaseRequest ):
       namespace = namespaces[ choice ]
     else:
       namespace = namespaces[ 0 ]
+=======
+      return _ExtractOverloads( response[ 'completions' ] )
+    return ( [], [] )
+
+
+  def Response( self ):
+    ( completions, overloads ) = self.RawResponse()
+    return ( _ConvertCompletionDatasToVimDatas( completions ), overloads )
+>>>>>>> 4b131b75... Display current argument in status line
 
     vimsupport.InsertNamespace( namespace )
 
@@ -232,5 +245,13 @@ def _ConvertCompletionDataToVimData( completion_identifier, completion_data ):
 
 
 def _ConvertCompletionDatasToVimDatas( response_data ):
+<<<<<<< HEAD
   return [ _ConvertCompletionDataToVimData( i, x )
            for i, x in enumerate( response_data ) ]
+
+
+def _ExtractOverloads( completions ):
+  return ( [ c for c in completions
+              if 'kind' not in c or c[ 'kind' ] != 'OVERLOAD' ],
+           [ c for c in completions
+              if 'kind' in c and c[ 'kind' ] == 'OVERLOAD' ] )

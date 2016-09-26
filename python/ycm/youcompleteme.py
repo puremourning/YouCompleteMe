@@ -313,9 +313,13 @@ class YouCompleteMe( object ):
 
 
   def GetCompletionResponse( self ):
-    response = self._latest_completion_request.Response()
+    ( response, overloads ) = self._latest_completion_request.Response()
     response[ 'completions' ] = base.AdjustCandidateInsertionText(
         response[ 'completions' ] )
+
+    if len( overloads ):
+      vimsupport.ShowFunctionSignature( overloads )
+
     return response
 
 
