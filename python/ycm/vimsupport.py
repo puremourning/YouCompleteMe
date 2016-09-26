@@ -1035,3 +1035,14 @@ def _SetUpLoadedBuffer( command, filename, fix, position, watch ):
 
   if position == 'end':
     vim.command( 'silent! normal G zz' )
+
+
+def ShowFunctionSignature( overloads ):
+  signature = ( overloads[ 0 ][ 'extra_menu_info' ]
+                + ' '
+                + overloads[ 0 ][ 'menu_text' ] )
+  PostVimMessage( signature, warning = False, truncate = True  )
+
+
+def ClearFunctionSignature():
+  vim.command( 'redraw' )

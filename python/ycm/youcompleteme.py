@@ -292,7 +292,12 @@ class YouCompleteMe( object ):
       except KeyboardInterrupt:
         return { 'words' : [], 'refresh' : 'always' }
 
-    results = base.AdjustCandidateInsertionText( request.Response() )
+    ( completions, overloads ) = request.Response()
+    results = base.AdjustCandidateInsertionText( completions )
+
+    if len( overloads ):
+      vimsupport.ShowFunctionSignature( overloads )
+
     return { 'words' : results, 'refresh' : 'always' }
 
 

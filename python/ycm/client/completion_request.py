@@ -50,7 +50,7 @@ class CompletionRequest( BaseRequest ):
 
   def RawResponse( self ):
     if not self._response_future:
-      return []
+      return ( [], [] )
     with HandleServerException( truncate = True ):
       response = JsonFromFuture( self._response_future )
 
@@ -59,12 +59,13 @@ class CompletionRequest( BaseRequest ):
         with HandleServerException( truncate = True ):
           raise MakeServerException( e )
 
-      return response[ 'completions' ]
-    return []
+      return _ExtractOverloads( response[ 'completions' ] )
+    return ( [], [] )
 
 
   def Response( self ):
-    return _ConvertCompletionDatasToVimDatas( self.RawResponse() )
+    ( completions, overloads ) = self.RawResponse()
+    return ( _ConvertCompletionDatasToVimDatas( completions ), overloads )
 
 
 def ConvertCompletionDataToVimData( completion_data ):
@@ -104,3 +105,10 @@ def ConvertCompletionDataToVimData( completion_data ):
 def _ConvertCompletionDatasToVimDatas( response_data ):
   return [ ConvertCompletionDataToVimData( x )
            for x in response_data ]
+
+
+def _ExtractOverloads( completions ):
+  return ( [ c for c in completions
+              if 'kind' not in c or c[ 'kind' ] != 'OVERLOAD' ],
+           [ c for c in completions
+              if 'kind' in c and c[ 'kind' ] == 'OVERLOAD' ] )
