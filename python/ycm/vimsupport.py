@@ -1264,10 +1264,20 @@ def VimVersionAtLeast( version_string ):
 
 
 def ShowFunctionSignature( overloads ):
-  signature = ( overloads[ 0 ][ 'extra_menu_info' ]
-                + ' '
-                + overloads[ 0 ][ 'menu_text' ] )
-  PostVimMessage( signature, warning = False, truncate = True  )
+  for _, overload in enumerate( overloads ):
+    if 'extra_menu_info' not in overload:
+      # FIXME: HACK!! This is working around some sort of bug where we get an
+      # "overload" with text 'std::' on a_vector.insert(
+      continue
+
+    signature = ( overload[ 'extra_menu_info' ]
+                  + ' '
+                  + overload[ 'menu_text' ] )
+
+    PostVimMessage( signature, warning = False, truncate = True  )
+    return
+
+  ClearFunctionSignature()
 
 
 def ClearFunctionSignature():

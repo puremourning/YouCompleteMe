@@ -319,6 +319,8 @@ class YouCompleteMe( object ):
 
     if len( overloads ):
       vimsupport.ShowFunctionSignature( overloads )
+    else:
+     vimsupport.ClearFunctionSignature()
 
     return response
 
