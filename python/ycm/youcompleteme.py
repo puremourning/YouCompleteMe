@@ -848,7 +848,7 @@ class YouCompleteMe( object ):
       except vim.error:
         return
 
-      self._ultisnips_snippet_cache = vimsupport.GetVariableValue( 
+      self._ultisnips_snippet_cache[ file_name ] = vimsupport.GetVariableValue( 
           'g:current_ulti_dict_info' )
 
     snippets = self._ultisnips_snippet_cache[ file_name ]
