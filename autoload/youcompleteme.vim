@@ -53,6 +53,12 @@ endfunction
 
 
 function! youcompleteme#Enable()
+  exec s:python_until_eof
+import cProfile
+
+pr = cProfile.Profile()
+pr.enable()
+EOF
   call s:SetUpBackwardsCompatibility()
 
   " This can be 0 if YCM libs are old or -1 if an exception occured while
@@ -115,6 +121,19 @@ function! youcompleteme#Enable()
   " the first loaded file. This should be the last command executed in this
   " function!
   call s:OnBufferRead()
+
+  exec s:python_until_eof
+import pstats
+import StringIO
+import logging
+
+pr.disable()
+stream = StringIO.StringIO()
+ps = pstats.Stats( pr, stream = stream ).sort_stats( 'cumulative' )
+ps.print_stats( 100 )
+logger = logging.getLogger( 'ycm' )
+logger.info( stream.getvalue() )
+EOF
 endfunction
 
 
