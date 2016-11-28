@@ -35,7 +35,7 @@ class DebugInfoRequest( BaseRequest ):
 
   def Start( self ):
     request_data = BuildRequestData()
-    with HandleServerException():
+    with HandleServerException( display = False ):
       self._response = self.PostDataToHandler( request_data, 'debug_info' )
 
 

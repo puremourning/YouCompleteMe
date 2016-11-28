@@ -25,7 +25,6 @@ from builtins import *  # noqa
 
 from ycmd.utils import ToUnicode
 from ycm.client.base_request import ( BaseRequest, JsonFromFuture,
-                                      DisplayServerException,
                                       HandleServerException,
                                       MakeServerException )
 
@@ -56,7 +55,8 @@ class CompletionRequest( BaseRequest ):
 
       errors = response[ 'errors' ] if 'errors' in response else []
       for e in errors:
-        DisplayServerException( MakeServerException( e ) )
+        with HandleServerException( truncate = True ):
+          raise MakeServerException( e )
 
       return response[ 'completions' ]
     return []
