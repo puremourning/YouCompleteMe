@@ -249,8 +249,7 @@ class YouCompleteMe( object ):
 
 
   def _ShutdownServer( self ):
-    if self.IsServerAlive():
-      SendShutdownRequest()
+    SendShutdownRequest()
 
 
   def RestartServer( self ):
@@ -293,15 +292,13 @@ class YouCompleteMe( object ):
 
 
   def SendCommandRequest( self, arguments, completer ):
-    if self.IsServerAlive():
-      return SendCommandRequest( arguments, completer )
+    return SendCommandRequest( arguments, completer )
 
 
   def GetDefinedSubcommands( self ):
-    if self.IsServerAlive():
-      with HandleServerException():
-        return BaseRequest.PostDataToHandler( BuildRequestData(),
-                                              'defined_subcommands' )
+    with HandleServerException():
+      return BaseRequest.PostDataToHandler( BuildRequestData(),
+                                            'defined_subcommands' )
     return []
 
 
@@ -318,9 +315,6 @@ class YouCompleteMe( object ):
       return self._available_completers[ filetype ]
     except KeyError:
       pass
-
-    if not self.IsServerAlive():
-      return False
 
     exists_completer = SendCompleterAvailableRequest( filetype )
     if exists_completer is None:
@@ -358,22 +352,16 @@ class YouCompleteMe( object ):
 
 
   def OnBufferUnload( self, deleted_buffer_file ):
-    if not self.IsServerAlive():
-      return
     SendEventNotificationAsync( 'BufferUnload', filepath = deleted_buffer_file )
 
 
   def OnBufferVisit( self ):
-    if not self.IsServerAlive():
-      return
     extra_data = {}
     self._AddUltiSnipsDataIfNeeded( extra_data )
     SendEventNotificationAsync( 'BufferVisit', extra_data = extra_data )
 
 
   def OnInsertLeave( self ):
-    if not self.IsServerAlive():
-      return
     SendEventNotificationAsync( 'InsertLeave' )
 
 
@@ -394,8 +382,6 @@ class YouCompleteMe( object ):
 
 
   def OnCurrentIdentifierFinished( self ):
-    if not self.IsServerAlive():
-      return
     SendEventNotificationAsync( 'CurrentIdentifierFinished' )
 
 
@@ -628,8 +614,6 @@ class YouCompleteMe( object ):
 
 
   def ShowDetailedDiagnostic( self ):
-    if not self.IsServerAlive():
-      return
     with HandleServerException():
       detailed_diagnostic = BaseRequest.PostDataToHandler(
           BuildRequestData(), 'detailed_diagnostic' )
@@ -643,13 +627,12 @@ class YouCompleteMe( object ):
     debug_info = ''
     if self._client_logfile:
       debug_info += 'Client logfile: {0}\n'.format( self._client_logfile )
-    if self.IsServerAlive():
-      debug_info += SendDebugInfoRequest()
-    else:
-      debug_info += 'Server crashed, no debug info from server'
-    debug_info += '\nServer running at: {0}\n'.format(
-        BaseRequest.server_location )
-    debug_info += 'Server process ID: {0}\n'.format( self._server_popen.pid )
+    debug_info += (
+      '{0}\n'
+      'Server running at: {1}\n'
+      'Server process ID: {2}\n'.format( SendDebugInfoRequest(),
+                                         BaseRequest.server_location,
+                                         self._server_popen.pid ) )
     if self._server_stderr or self._server_stdout:
       debug_info += ( 'Server logfiles:\n'
                       '  {0}\n'

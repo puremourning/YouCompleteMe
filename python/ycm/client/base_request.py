@@ -35,8 +35,9 @@ from ycmd.hmac_utils import CreateRequestHmac, CreateHmac, SecureBytesEqual
 from ycmd.responses import ServerError, UnknownExtraConf
 
 _HEADERS = {'content-type': 'application/json'}
+_CONNECT_TIMEOUT_SEC = 0.01
 # Setting this to None seems to screw up the Requests/urllib3 libs.
-_DEFAULT_TIMEOUT_SEC = 30
+_READ_TIMEOUT_SEC = 30
 _HMAC_HEADER = 'x-ycm-hmac'
 _logger = logging.getLogger( __name__ )
 
@@ -62,7 +63,7 @@ class BaseRequest( object ):
   # |timeout| is num seconds to tolerate no response from server before giving
   # up; see Requests docs for details (we just pass the param along).
   @staticmethod
-  def GetDataFromHandler( handler, timeout = _DEFAULT_TIMEOUT_SEC ):
+  def GetDataFromHandler( handler, timeout = _READ_TIMEOUT_SEC ):
     return JsonFromFuture( BaseRequest._TalkToHandlerAsync( '',
                                                             handler,
                                                             'GET',
@@ -73,7 +74,7 @@ class BaseRequest( object ):
   # |timeout| is num seconds to tolerate no response from server before giving
   # up; see Requests docs for details (we just pass the param along).
   @staticmethod
-  def PostDataToHandler( data, handler, timeout = _DEFAULT_TIMEOUT_SEC ):
+  def PostDataToHandler( data, handler, timeout = _READ_TIMEOUT_SEC ):
     return JsonFromFuture( BaseRequest.PostDataToHandlerAsync( data,
                                                                handler,
                                                                timeout ) )
@@ -83,7 +84,7 @@ class BaseRequest( object ):
   # |timeout| is num seconds to tolerate no response from server before giving
   # up; see Requests docs for details (we just pass the param along).
   @staticmethod
-  def PostDataToHandlerAsync( data, handler, timeout = _DEFAULT_TIMEOUT_SEC ):
+  def PostDataToHandlerAsync( data, handler, timeout = _READ_TIMEOUT_SEC ):
     return BaseRequest._TalkToHandlerAsync( data, handler, 'POST', timeout )
 
 
@@ -95,7 +96,7 @@ class BaseRequest( object ):
   def _TalkToHandlerAsync( data,
                            handler,
                            method,
-                           timeout = _DEFAULT_TIMEOUT_SEC ):
+                           timeout = _READ_TIMEOUT_SEC ):
     def SendRequest( data, handler, method, timeout ):
       request_uri = _BuildUri( handler )
       if method == 'POST':
@@ -106,12 +107,12 @@ class BaseRequest( object ):
             headers = BaseRequest._ExtraHeaders( method,
                                                  request_uri,
                                                  sent_data ),
-            timeout = timeout )
+            timeout = ( _CONNECT_TIMEOUT_SEC, timeout ) )
       if method == 'GET':
         return BaseRequest.GetSession().get(
             request_uri,
             headers = BaseRequest._ExtraHeaders( method, request_uri ),
-            timeout = timeout )
+            timeout = ( _CONNECT_TIMEOUT_SEC, timeout ) )
 
     return SendRequest( data, handler, method, timeout )
 
