@@ -636,7 +636,7 @@ class YouCompleteMe( object ):
       'Server running at: {1}\n'
       'Server process ID: {2}\n'.format( SendDebugInfoRequest(),
                                          BaseRequest.server_location,
-                                         self._server_popen.pid )
+                                         self._server_popen.pid ) )
     if self._server_stderr or self._server_stdout:
       debug_info += ( 'Server logfiles:\n'
                       '  {0}\n'
