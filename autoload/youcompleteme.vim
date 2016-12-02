@@ -111,10 +111,14 @@ function! youcompleteme#Enable()
     augroup END
   endif
 
-  " Calling this once solves the problem of BufRead/BufEnter not triggering for
-  " the first loaded file. This should be the last command executed in this
-  " function!
-  call s:OnBufferRead()
+  call s:DisableOnLargeFile( expand( '<afile>:p' ) )
+
+  call s:SetUpCompleteopt()
+  call s:SetCompleteFunc()
+
+  if !s:defer_omnifunc
+    call s:SetOmnicompleteFunc()
+  endif
 endfunction
 
 

@@ -25,21 +25,16 @@ from builtins import *  # noqa
 
 import contextlib
 import logging
-import requests
 import urllib.parse
 import json
 from future.utils import native
 from base64 import b64decode, b64encode
-from retries import retries
-from requests_futures.sessions import FuturesSession
-from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
 from ycm import vimsupport
 from ycmd.utils import ToBytes
 from ycmd.hmac_utils import CreateRequestHmac, CreateHmac, SecureBytesEqual
 from ycmd.responses import ServerError, UnknownExtraConf
 
 _HEADERS = {'content-type': 'application/json'}
-_EXECUTOR = UnsafeThreadPoolExecutor( max_workers = 30 )
 # Setting this to None seems to screw up the Requests/urllib3 libs.
 _DEFAULT_TIMEOUT_SEC = 30
 _HMAC_HEADER = 'x-ycm-hmac'
@@ -105,7 +100,7 @@ class BaseRequest( object ):
       request_uri = _BuildUri( handler )
       if method == 'POST':
         sent_data = _ToUtf8Json( data )
-        return BaseRequest.session.post(
+        return BaseRequest.GetSession().post(
             request_uri,
             data = sent_data,
             headers = BaseRequest._ExtraHeaders( method,
@@ -113,7 +108,7 @@ class BaseRequest( object ):
                                                  sent_data ),
             timeout = timeout )
       if method == 'GET':
-        return BaseRequest.session.get(
+        return BaseRequest.GetSession().get(
             request_uri,
             headers = BaseRequest._ExtraHeaders( method, request_uri ),
             timeout = timeout )
@@ -133,7 +128,19 @@ class BaseRequest( object ):
                            BaseRequest.hmac_secret ) )
     return headers
 
-  session = FuturesSession( executor = _EXECUTOR )
+
+  @staticmethod
+  def GetSession():
+    try:
+      return BaseRequest.session
+    except AttributeError:
+      from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
+      from requests_futures.sessions import FuturesSession
+      executor = UnsafeThreadPoolExecutor( max_workers = 30 )
+      BaseRequest.session = FuturesSession( executor = executor )
+      return BaseRequest.session
+
+
   server_location = ''
   hmac_secret = ''
 
@@ -165,7 +172,8 @@ def BuildRequestData( filepath = None ):
 def JsonFromFuture( future ):
   response = future.result()
   _ValidateResponseObject( response )
-  if response.status_code == requests.codes.server_error:
+  from requests import codes
+  if response.status_code == codes.server_error:
     raise MakeServerException( response.json() )
 
   # We let Requests handle the other status types, we only handle the 500
