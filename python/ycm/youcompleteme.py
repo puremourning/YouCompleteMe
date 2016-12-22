@@ -108,6 +108,15 @@ SERVER_LOGFILE_FORMAT = 'ycmd_{port}_{std}_'
 # https://msdn.microsoft.com/en-us/library/ms724935.aspx
 HANDLE_FLAG_INHERIT = 0x00000001
 
+from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
+_INIT_EXECUTOR = UnsafeThreadPoolExecutor( max_workers = 1 )
+
+
+def _SetupAsync( ycm ):
+  ycm._SetupServer()
+  ycm._ycmd_keepalive.Start()
+
+
 
 class YouCompleteMe( object ):
   def __init__( self, user_options ):
@@ -126,12 +135,12 @@ class YouCompleteMe( object ):
     self._server_popen = None
     self._filetypes_with_keywords_loaded = set()
     self._ycmd_keepalive = YcmdKeepalive()
-    self._SetupLogging()
-    self._SetupServer()
-    self._ycmd_keepalive.Start()
     self._complete_done_hooks = {
       'cs': lambda self: self._OnCompleteDone_Csharp()
     }
+    self._SetupLogging()
+    self._init_future = _INIT_EXECUTOR.submit( _SetupAsync, self )
+
 
   def _SetupServer( self ):
     self._available_completers = {}
@@ -170,8 +179,6 @@ class YouCompleteMe( object ):
                                             stdout = PIPE, stderr = PIPE )
       BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
       BaseRequest.hmac_secret = hmac_secret
-
-    self._NotifyUserIfServerCrashed()
 
 
   def _SetupLogging( self ):
@@ -213,6 +220,11 @@ class YouCompleteMe( object ):
 
 
   def IsServerAlive( self ):
+    if ( not self._init_future or
+         not self._init_future.done() or
+         not self._server_popen ):
+      return False
+
     return_code = self._server_popen.poll()
     # When the process hasn't finished yet, poll() returns None.
     return return_code is None
@@ -221,7 +233,14 @@ class YouCompleteMe( object ):
   def _NotifyUserIfServerCrashed( self ):
     if self._user_notified_about_crash or self.IsServerAlive():
       return
+
+    if ( not self._init_future or
+         not self._init_future.done() or
+         not self._server_popen ):
+      return
+
     self._user_notified_about_crash = True
+
 
     return_code = self._server_popen.poll()
     if return_code == server_utils.CORE_UNEXPECTED_STATUS:
