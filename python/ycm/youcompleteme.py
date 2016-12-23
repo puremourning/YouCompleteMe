@@ -30,7 +30,6 @@ import json
 import logging
 import os
 import re
-import signal
 import vim
 from subprocess import PIPE
 from tempfile import NamedTemporaryFile
@@ -71,11 +70,6 @@ def PatchNoProxy():
 #  https://github.com/kennethreitz/requests/issues/879
 PatchNoProxy()
 
-# Force the Python interpreter embedded in Vim (in which we are running) to
-# ignore the SIGINT signal. This helps reduce the fallout of a user pressing
-# Ctrl-C in Vim.
-signal.signal( signal.SIGINT, signal.SIG_IGN )
-
 HMAC_SECRET_LENGTH = 16
 SERVER_SHUTDOWN_MESSAGE = (
   "The ycmd server SHUT DOWN (restart with ':YcmRestartServer')." )
@@ -108,15 +102,6 @@ SERVER_LOGFILE_FORMAT = 'ycmd_{port}_{std}_'
 # https://msdn.microsoft.com/en-us/library/ms724935.aspx
 HANDLE_FLAG_INHERIT = 0x00000001
 
-from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
-_INIT_EXECUTOR = UnsafeThreadPoolExecutor( max_workers = 1 )
-
-
-def _SetupAsync( ycm ):
-  ycm._SetupServer()
-  ycm._ycmd_keepalive.Start()
-
-
 
 class YouCompleteMe( object ):
   def __init__( self, user_options ):
@@ -139,7 +124,8 @@ class YouCompleteMe( object ):
       'cs': lambda self: self._OnCompleteDone_Csharp()
     }
     self._SetupLogging()
-    self._init_future = _INIT_EXECUTOR.submit( _SetupAsync, self )
+    self._SetupServer()
+    self._ycmd_keepalive.Start()
 
 
   def _SetupServer( self ):
@@ -180,6 +166,7 @@ class YouCompleteMe( object ):
       BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
       BaseRequest.hmac_secret = hmac_secret
 
+      self._NotifyUserIfServerCrashed()
 
   def _SetupLogging( self ):
     def FreeFileFromOtherProcesses( file_object ):
@@ -220,11 +207,6 @@ class YouCompleteMe( object ):
 
 
   def IsServerAlive( self ):
-    if ( not self._init_future or
-         not self._init_future.done() or
-         not self._server_popen ):
-      return False
-
     return_code = self._server_popen.poll()
     # When the process hasn't finished yet, poll() returns None.
     return return_code is None
@@ -232,11 +214,6 @@ class YouCompleteMe( object ):
 
   def _NotifyUserIfServerCrashed( self ):
     if self._user_notified_about_crash or self.IsServerAlive():
-      return
-
-    if ( not self._init_future or
-         not self._init_future.done() or
-         not self._server_popen ):
       return
 
     self._user_notified_about_crash = True

@@ -24,11 +24,16 @@ from __future__ import absolute_import
 
 import sys
 import os
+import concurrent.futures
+
 
 # Can't import these from paths.py because that uses `future` imports
 DIR_OF_CURRENT_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_OF_YCMD = os.path.join( DIR_OF_CURRENT_SCRIPT, '..', '..', 'third_party',
                             'ycmd' )
+
+import concurrent.futures
+_INIT_EXECUTOR = concurrent.futures.ThreadPoolExecutor( max_workers = 1 )
 
 
 def SetUpSystemPaths():
@@ -41,13 +46,25 @@ def SetUpSystemPaths():
   su.AddNearestThirdPartyFoldersToSysPath( su.__file__ )
 
 
-def SetUpYCM():
+def SetUpYCMAsync():
   from ycm import base
   from ycmd import user_options_store
-  from ycm.youcompleteme import YouCompleteMe
+  import signal
+
+  # Force the Python interpreter embedded in Vim (in which we are running) to
+  # ignore the SIGINT signal. This helps reduce the fallout of a user pressing
+  # Ctrl-C in Vim.
+  #
+  # NOTE: We must do this in the main thread (so we can't do it within
+  # youcompleteme.py)
+  signal.signal( signal.SIGINT, signal.SIG_IGN )
 
   base.LoadJsonDefaultsIntoVim()
-
   user_options_store.SetAll( base.BuildServerConf() )
+  return _INIT_EXECUTOR.submit( SetUpYCM )
 
+
+def SetUpYCM():
+  from ycm.youcompleteme import YouCompleteMe
+  from ycmd import user_options_store
   return YouCompleteMe( user_options_store.GetAll() )
