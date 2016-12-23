@@ -142,13 +142,45 @@ function! youcompleteme#DisableCursorMovedAutocommands()
 endfunction
 
 
+function! s:WaitingForYcmd()
+  exec s:python_until_eof
+if not ycm_state.done():
+  vim.command( 'return 1')
+else:
+  try:
+    ycm = ycm_state.result()
+  except:
+    # We don't use PostVimMessage or EchoText from the vimsupport module because
+    # importing this module may fail.
+    vim.command( 'redraw | echohl WarningMsg' )
+    for line in traceback.format_exc().splitlines():
+      vim.command( "echom '{0}'".format( line.replace( "'", "''" ) ) )
+
+    vim.command( "echo 'YouCompleteMe unavailable: {0}'"
+                 .format( str( error ).replace( "'", "''" ) ) )
+    vim.command( 'echohl None' )
+    vim.command( 'return 1' )
+  else:
+    vim.command( 'return 0' )
+EOF
+endfunction
+
+
 function! youcompleteme#GetErrorCount()
-  return s:Pyeval( 'ycm_state.GetErrorCount()' )
+  if s:WaitingForYcmd()
+    return 0
+  endif
+
+  return s:Pyeval( 'ycm_state.result().GetErrorCount()' )
 endfunction
 
 
 function! youcompleteme#GetWarningCount()
-  return s:Pyeval( 'ycm_state.GetWarningCount()' )
+  if s:WaitingForYcmd()
+    return 0
+  endif
+
+  return s:Pyeval( 'ycm_state.result().GetWarningCount()' )
 endfunction
 
 
@@ -168,29 +200,16 @@ import vim
 script_folder = vim.eval( 's:script_folder_path' )
 sys.path.insert( 0, os.path.join( script_folder, '..', 'python' ) )
 
-from ycm.setup import SetUpSystemPaths, SetUpYCM
+from ycm.setup import SetUpSystemPaths, SetUpYCMAsync
 
 # We enclose this code in a try/except block to avoid backtraces in Vim.
-try:
-  SetUpSystemPaths()
+SetUpSystemPaths()
 
-  # Import the modules used in this file.
-  from ycm import base, vimsupport
+# Import the modules used in this file.
+from ycm import base, vimsupport
 
-  ycm_state = SetUpYCM()
-except Exception as error:
-  # We don't use PostVimMessage or EchoText from the vimsupport module because
-  # importing this module may fail.
-  vim.command( 'redraw | echohl WarningMsg' )
-  for line in traceback.format_exc().splitlines():
-    vim.command( "echom '{0}'".format( line.replace( "'", "''" ) ) )
-
-  vim.command( "echo 'YouCompleteMe unavailable: {0}'"
-               .format( str( error ).replace( "'", "''" ) ) )
-  vim.command( 'echohl None' )
-  vim.command( 'return 0' )
-else:
-  vim.command( 'return 1' )
+ycm_state = SetUpYCMAsync()
+vim.command( 'return 1' )
 EOF
 endfunction
 
@@ -330,6 +349,10 @@ endfunction
 
 
 function! s:AllowedToCompleteInBuffer( buffer )
+  if s:WaitingForYcmd()
+    return 0
+  endif
+
   let buffer_filetype = getbufvar( a:buffer, '&filetype' )
 
   if empty( buffer_filetype ) ||
@@ -444,12 +467,18 @@ endfunction
 
 
 function! s:OnVimLeave()
-  exec s:python_command "ycm_state.OnVimLeave()"
+  if s:WaitingForYcmd()
+    return
+  endif
+  exec s:python_command "ycm_state.result().OnVimLeave()"
 endfunction
 
 
 function! s:OnCompleteDone()
-  exec s:python_command "ycm_state.OnCompleteDone()"
+  if s:WaitingForYcmd()
+    return
+  endif
+  exec s:python_command "ycm_state.result().OnCompleteDone()"
 endfunction
 
 
@@ -472,7 +501,7 @@ function! s:OnBufferRead()
     call s:SetOmnicompleteFunc()
   endif
 
-  exec s:python_command "ycm_state.OnBufferVisit()"
+  exec s:python_command "ycm_state.result().OnBufferVisit()"
   call s:OnFileReadyToParse()
 endfunction
 
@@ -482,7 +511,7 @@ function! s:OnBufferEnter()
     return
   endif
 
-  exec s:python_command "ycm_state.OnBufferVisit()"
+  exec s:python_command "ycm_state.result().OnBufferVisit()"
   call s:OnFileReadyToParse()
 endfunction
 
@@ -495,7 +524,7 @@ function! s:OnBufferUnload()
   endif
 
   let deleted_buffer_file = expand( '<afile>:p' )
-  exec s:python_command "ycm_state.OnBufferUnload("
+  exec s:python_command "ycm_state.result().OnBufferUnload("
         \ "vim.eval( 'deleted_buffer_file' ) )"
 endfunction
 
@@ -519,11 +548,11 @@ function! s:OnFileReadyToParse()
   " reparsing the file again. If we sent the new parse request first, then
   " the response would always be pending when we called
   " HandleFileParseRequest.
-  exec s:python_command "ycm_state.HandleFileParseRequest()"
+  exec s:python_command "ycm_state.result().HandleFileParseRequest()"
 
   let buffer_changed = b:changedtick != b:ycm_changedtick.file_ready_to_parse
   if buffer_changed
-    exec s:python_command "ycm_state.OnFileReadyToParse()"
+    exec s:python_command "ycm_state.result().OnFileReadyToParse()"
   endif
   let b:ycm_changedtick.file_ready_to_parse = b:changedtick
 endfunction
@@ -536,7 +565,7 @@ endfunction
 
 
 function! s:SetOmnicompleteFunc()
-  if s:Pyeval( 'ycm_state.NativeFiletypeCompletionUsable()' )
+  if s:Pyeval( 'ycm_state.result().NativeFiletypeCompletionUsable()' )
     let &omnifunc = 'youcompleteme#OmniComplete'
     let &l:omnifunc = 'youcompleteme#OmniComplete'
 
@@ -555,7 +584,7 @@ function! s:OnTextChangedInsertMode()
     return
   endif
 
-  exec s:python_command "ycm_state.OnCursorMoved()"
+  exec s:python_command "ycm_state.result().OnCursorMoved()"
   call s:UpdateCursorMoved()
 
   call s:IdentifierFinishedOperations()
@@ -582,7 +611,7 @@ function! s:OnCursorMovedNormalMode()
   endif
 
   call s:OnFileReadyToParse()
-  exec s:python_command "ycm_state.OnCursorMoved()"
+  exec s:python_command "ycm_state.result().OnCursorMoved()"
 endfunction
 
 
@@ -593,7 +622,7 @@ function! s:OnInsertLeave()
 
   let s:omnifunc_mode = 0
   call s:OnFileReadyToParse()
-  exec s:python_command "ycm_state.OnInsertLeave()"
+  exec s:python_command "ycm_state.result().OnInsertLeave()"
   if g:ycm_autoclose_preview_window_after_completion ||
         \ g:ycm_autoclose_preview_window_after_insertion
     call s:ClosePreviewWindowIfNeeded()
@@ -634,10 +663,13 @@ endfunction
 
 
 function! s:IdentifierFinishedOperations()
+  if s:WaitingForYcmd()
+    return
+  endif
   if !s:Pyeval( 'base.CurrentIdentifierFinished()' )
     return
   endif
-  exec s:python_command "ycm_state.OnCurrentIdentifierFinished()"
+  exec s:python_command "ycm_state.result().OnCurrentIdentifierFinished()"
   let s:omnifunc_mode = 0
 endfunction
 
@@ -713,7 +745,7 @@ endfunction
 
 
 function! s:GetCompletions()
-  return s:Pyeval( 'ycm_state.GetCompletions()' )
+  return s:Pyeval( 'ycm_state.result().GetCompletions()' )
 endfunction
 
 
@@ -737,10 +769,13 @@ function! youcompleteme#Complete( findstart, base )
       return -2
     endif
 
-    if !s:Pyeval( 'ycm_state.IsServerAlive()' )
+    if s:WaitingForYcmd()
       return -2
     endif
-    exec s:python_command "ycm_state.CreateCompletionRequest()"
+    if !s:Pyeval( 'ycm_state.result().IsServerAlive()' )
+      return -2
+    endif
+    exec s:python_command "ycm_state.result().CreateCompletionRequest()"
     return s:Pyeval( 'base.CompletionStartColumn()' )
   else
     return s:GetCompletions()
@@ -750,11 +785,11 @@ endfunction
 
 function! youcompleteme#OmniComplete( findstart, base )
   if a:findstart
-    if !s:Pyeval( 'ycm_state.IsServerAlive()' )
+    if !s:Pyeval( 'ycm_state.result().IsServerAlive()' )
       return -2
     endif
     let s:omnifunc_mode = 1
-    exec s:python_command "ycm_state.CreateCompletionRequest("
+    exec s:python_command "ycm_state.result().CreateCompletionRequest("
           \ "force_semantic = True )"
     return s:Pyeval( 'base.CompletionStartColumn()' )
   else
@@ -764,23 +799,36 @@ endfunction
 
 
 function! youcompleteme#ServerPid()
-  return s:Pyeval( 'ycm_state.ServerPid()' )
+  if s:WaitingForYcmd()
+    return -1
+  endif
+  return s:Pyeval( 'ycm_state.result().ServerPid()' )
 endfunction
 
 
 function! s:RestartServer()
-  exec s:python_command "ycm_state.RestartServer()"
+  if s:WaitingForYcmd()
+    return
+  endif
+  exec s:python_command "ycm_state.result().RestartServer()"
 endfunction
 
 
 function! s:ShowDetailedDiagnostic()
-  exec s:python_command "ycm_state.ShowDetailedDiagnostic()"
+  if s:WaitingForYcmd()
+    return
+  endif
+  exec s:python_command "ycm_state.result().ShowDetailedDiagnostic()"
 endfunction
 
 
 function! s:DebugInfo()
   echom "Printing YouCompleteMe debug information..."
-  let debug_info = s:Pyeval( 'ycm_state.DebugInfo()' )
+  if s:WaitingForYcmd()
+    echom "YouCompleteMe is starting, please wait..."
+    return
+  endif
+  let debug_info = s:Pyeval( 'ycm_state.result().DebugInfo()' )
   for line in split( debug_info, "\n" )
     echom '-- ' . line
   endfor
@@ -788,11 +836,19 @@ endfunction
 
 
 function! s:ToggleLogs(...)
-  exec s:python_command "ycm_state.ToggleLogs( *vim.eval( 'a:000' ) )"
+  if s:WaitingForYcmd()
+    echom "YouCompleteMe is starting, please wait..."
+    return
+  endif
+  exec s:python_command "ycm_state.result().ToggleLogs( *vim.eval( 'a:000' ) )"
 endfunction
 
 
 function! s:CompleterCommand(...)
+  if s:WaitingForYcmd()
+    echom "YouCompleteMe is starting, please wait..."
+    return
+  endif
   " CompleterCommand will call the OnUserCommand function of a completer.
   " If the first arguments is of the form "ft=..." it can be used to specify the
   " completer to use (for example "ft=cpp").  Else the native filetype completer
@@ -810,7 +866,7 @@ function! s:CompleterCommand(...)
     let arguments = arguments[1:]
   endif
 
-  exec s:python_command "ycm_state.SendCommandRequest("
+  exec s:python_command "ycm_state.result().SendCommandRequest("
         \ "vim.eval( 'l:arguments' ), vim.eval( 'l:completer' ) ) "
 endfunction
 
@@ -824,25 +880,35 @@ endfunction
 
 
 function! youcompleteme#LogsComplete( arglead, cmdline, cursorpos )
-  return join( s:Pyeval( 'list( ycm_state.GetLogfiles() )' ), "\n" )
+  if s:WaitingForYcmd()
+    return []
+  endif
+  return join( s:Pyeval( 'list( ycm_state.result().GetLogfiles() )' ), "\n" )
 endfunction
 
 
 function! youcompleteme#SubCommandsComplete( arglead, cmdline, cursorpos )
-  return join( s:Pyeval( 'ycm_state.GetDefinedSubcommands()' ), "\n" )
+  if s:WaitingForYcmd()
+    return []
+  endif
+  return join( s:Pyeval( 'ycm_state.result().GetDefinedSubcommands()' ), "\n" )
 endfunction
 
 
 function! s:ForceCompile()
-  if !s:Pyeval( 'ycm_state.NativeFiletypeCompletionUsable()' )
+  if s:WaitingForYcmd()
+    echom "YouCompleteMe is starting, please wait..."
+    return
+  endif
+  if !s:Pyeval( 'ycm_state.result().NativeFiletypeCompletionUsable()' )
     echom "Native filetype completion not supported for current file, "
           \ . "cannot force recompilation."
     return 0
   endif
 
   echom "Forcing compilation, this will block Vim until done."
-  exec s:python_command "ycm_state.OnFileReadyToParse()"
-  exec s:python_command "ycm_state.HandleFileParseRequest( True )"
+  exec s:python_command "ycm_state.result().OnFileReadyToParse()"
+  exec s:python_command "ycm_state.result().HandleFileParseRequest( True )"
 
   return 1
 endfunction
@@ -858,12 +924,16 @@ endfunction
 
 
 function! s:ShowDiagnostics()
+  if s:WaitingForYcmd()
+    echom "YouCompleteMe is starting, please wait..."
+    return
+  endif
   let compilation_succeeded = s:ForceCompile()
   if !compilation_succeeded
     return
   endif
 
-  if s:Pyeval( 'ycm_state.PopulateLocationListWithLatestDiagnostics()' )
+  if s:Pyeval( 'ycm_state.result().PopulateLocationListWithLatestDiagnostics()' )
     if g:ycm_open_loclist_on_ycm_diags
       lopen
     endif

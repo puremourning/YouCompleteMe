@@ -30,7 +30,6 @@ import json
 import logging
 import os
 import re
-import signal
 import vim
 from subprocess import PIPE
 from tempfile import NamedTemporaryFile
@@ -70,11 +69,6 @@ def PatchNoProxy():
 #  https://github.com/Valloric/YouCompleteMe/issues/641
 #  https://github.com/kennethreitz/requests/issues/879
 PatchNoProxy()
-
-# Force the Python interpreter embedded in Vim (in which we are running) to
-# ignore the SIGINT signal. This helps reduce the fallout of a user pressing
-# Ctrl-C in Vim.
-signal.signal( signal.SIGINT, signal.SIG_IGN )
 
 HMAC_SECRET_LENGTH = 16
 SERVER_SHUTDOWN_MESSAGE = (
@@ -132,6 +126,8 @@ class YouCompleteMe( object ):
     self._complete_done_hooks = {
       'cs': lambda self: self._OnCompleteDone_Csharp()
     }
+
+
 
   def _SetupServer( self ):
     self._available_completers = {}
