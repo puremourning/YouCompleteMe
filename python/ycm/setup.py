@@ -30,7 +30,7 @@ import os
 DIR_OF_CURRENT_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_OF_YCMD = os.path.join( DIR_OF_CURRENT_SCRIPT, '..', '..', 'third_party',
                             'ycmd' )
-
+YCM_VAR_PREFIX = 'ycm_'
 
 def SetUpSystemPaths():
   sys.path.insert( 0, os.path.join( DIR_OF_YCMD ) )
@@ -43,7 +43,6 @@ def SetUpSystemPaths():
 
 
 def SetUpYCMAsync():
-  from ycm import base
   from ycmd import user_options_store
   import signal
 
@@ -58,9 +57,41 @@ def SetUpYCMAsync():
   # youcompleteme.py)
   signal.signal( signal.SIGINT, signal.SIG_IGN )
 
-  base.LoadJsonDefaultsIntoVim()
-  user_options_store.SetAll( base.BuildServerConf() )
+  LoadJsonDefaultsIntoVim()
+  user_options_store.SetAll( BuildServerConf() )
   return _INIT_EXECUTOR.submit( SetUpYCM )
+
+
+def BuildServerConf():
+  from ycm import vimsupport
+
+  """Builds a dictionary mapping YCM Vim user options to values. Option names
+  don't have the 'ycm_' prefix."""
+  # We only evaluate the keys of the vim globals and not the whole dictionary
+  # to avoid unicode issues.
+  # See https://github.com/Valloric/YouCompleteMe/pull/2151 for details.
+  keys = vimsupport.GetVimGlobalsKeys()
+  server_conf = {}
+  for key in keys:
+    if not key.startswith( YCM_VAR_PREFIX ):
+      continue
+    new_key = key[ len( YCM_VAR_PREFIX ): ]
+    new_value = vimsupport.VimExpressionToPythonType( 'g:' + key )
+    server_conf[ new_key ] = new_value
+
+  return server_conf
+
+
+def LoadJsonDefaultsIntoVim():
+  from ycmd import user_options_store
+  from ycm import vimsupport
+  from future.utils import iteritems
+
+  defaults = user_options_store.DefaultOptions()
+  for key, value in iteritems( defaults ):
+    new_key = 'g:ycm_' + key
+    if not vimsupport.VariableExists( new_key ):
+      vimsupport.SetVariableValue( new_key, value )
 
 
 def SetUpYCM():
