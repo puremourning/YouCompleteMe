@@ -127,12 +127,13 @@ EOF
   endif
 
   exec s:python_until_eof
+pr.disable()
+
 import pstats
-import StringIO
+from io import StringIO
 import logging
 
-pr.disable()
-stream = StringIO.StringIO()
+stream = StringIO()
 ps = pstats.Stats( pr, stream = stream ).sort_stats( 'cumulative' )
 ps.print_stats( 100 )
 logger = logging.getLogger( 'ycm' )
