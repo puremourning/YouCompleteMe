@@ -2424,7 +2424,7 @@ found through the PATH.
 FAQ
 ---
 
-### I used to be able to `import vim` in `.ycm_extra_conf.py`, but now can't
+* I used to be able to `import vim` in `.ycm_extra_conf.py`, but now can't
 
 YCM was rewritten to use a client-server architecture where most of the logic is
 in the [ycmd server][ycmd]. So the magic `vim` module you could have previously
@@ -2438,12 +2438,12 @@ But fear not, you should be able to tweak your extra conf files to continue
 working by using the `g:ycm_extra_conf_vim_data` option. See the docs on that
 option for details.
 
-### On very rare occasions Vim crashes when I tab through the completion menu
+* On very rare occasions Vim crashes when I tab through the completion menu
 
 That's a very rare Vim bug most users never encounter. It's fixed in Vim
 7.4.72. Update to that version (or above) to resolve the issue.
 
-### I get `ImportError` exceptions that mention `PyInit_ycm_core` or `initycm_core`
+* I get `ImportError` exceptions that mention `PyInit_ycm_core` or `initycm_core`
 
 These errors are caused by building the YCM native libraries for Python 2 and
 trying to load them into a Python 3 process (or the other way around).
@@ -2465,13 +2465,13 @@ specific Python interpreter for `ycmd` is usually the easiest way to solve the
 problem. Common values for that option are `/usr/bin/python` and
 `/usr/bin/python3`.
 
-### I get a linker warning regarding `libpython` on Mac when compiling YCM
+* I get a linker warning regarding `libpython` on Mac when compiling YCM
 
 If the warning is `ld: warning: path '/usr/lib/libpython2.7.dylib' following -L
 not a directory`, then feel free to ignore it; it's caused by a limitation of
 CMake and is not an issue. Everything should still work fine.
 
-### I get a weird window at the top of my file when I use the semantic engine
+* I get a weird window at the top of my file when I use the semantic engine
 
 This is Vim's `preview` window. Vim uses it to show you extra information about
 something if such information is available. YCM provides Vim with such extra
@@ -2490,7 +2490,7 @@ If you don't want this window to ever show up, add `set completeopt-=preview` to
 your `vimrc`. Also make sure that the `g:ycm_add_preview_to_completeopt` option
 is set to `0`.
 
-### It appears that YCM is not working
+* It appears that YCM is not working
 
 In Vim, run `:messages` and carefully read the output. YCM will echo messages to
 the message log if it encounters problems. It's likely you misconfigured
@@ -2502,7 +2502,7 @@ the compile flags for the current file if the file is a C-family language file
 and you have compiled in Clang support. Logfiles can be opened in the editor
 using [the `:YcmToggleLogs` command](#the-ycmtogglelogs-command).
 
-### Sometimes it takes much longer to get semantic completions than normal
+* Sometimes it takes much longer to get semantic completions than normal
 
 This means that libclang (which YCM uses for C-family semantic completion)
 failed to pre-compile your file's preamble. In other words, there was an error
@@ -2513,7 +2513,7 @@ Bottom line, if libclang can't pre-compile your file's preamble because there
 were errors in it, you're going to get slow completions because there's no AST
 cache.
 
-### YCM auto-inserts completion strings I don't want!
+* YCM auto-inserts completion strings I don't want!
 
 This means you probably have some mappings that interfere with YCM's internal
 ones. Make sure you don't have something mapped to `<C-p>`, `<C-x>` or `<C-u>`
@@ -2523,7 +2523,7 @@ YCM _never_ selects something for you; it just shows you a menu and the user has
 to explicitly select something. If something is being selected automatically,
 this means there's a bug or a misconfiguration somewhere.
 
-### I get a `E227: mapping already exists for <blah>` error when I start Vim
+* I get a `E227: mapping already exists for <blah>` error when I start Vim
 
 This means that YCM tried to set up a key mapping but failed because you already
 had something mapped to that key combination. The `<blah>` part of the message
@@ -2533,27 +2533,27 @@ Look in the _Options_ section and see if any of the default mappings conflict
 with your own. Then change that option value to something else so that the
 conflict goes away.
 
-### I get `'GLIBC_2.XX' not found (required by libclang.so)` when starting Vim
+* I get `'GLIBC_2.XX' not found (required by libclang.so)` when starting Vim
 
 Your system is too old for the precompiled binaries from llvm.org. Compile
 Clang on your machine and then link against the `libclang.so` you just produced.
 See the full installation guide for help.
 
-### I'm trying to use a Homebrew Vim with YCM and I'm getting segfaults
+* I'm trying to use a Homebrew Vim with YCM and I'm getting segfaults
 
 Something (I don't know what) is wrong with the way that Homebrew configures and
 builds Vim. I recommend using [MacVim][]. Even if you don't like the MacVim GUI,
 you can use the Vim binary that is inside the MacVim.app package (it's
 `MacVim.app/Contents/MacOS/Vim`) and get the Vim console experience.
 
-### I have a Homebrew Python and/or MacVim; can't compile/SIGABRT when starting
+* I have a Homebrew Python and/or MacVim; can't compile/SIGABRT when starting
 
 You should probably run `brew rm python; brew install python` to get the latest
 fixes that should make YCM work with such a configuration. Also rebuild Macvim
 then. If you still get problems with this, see [issue #18][issue18] for
 suggestions.
 
-### I get `LONG_BIT definition appears wrong for platform` when compiling
+* I get `LONG_BIT definition appears wrong for platform` when compiling
 
 Look at the output of your CMake call. There should be a line in it like the
 following (with `.dylib` in place of `.so` on a Mac):
@@ -2590,7 +2590,7 @@ to use. You may need to set these flags to something else, but you need to make
 sure you use the same version of Python that your Vim binary is built against,
 which is highly likely to be the system's default Python.
 
-### I get `libpython2.7.a [...] relocation R_X86_64_32` when compiling
+* I get `libpython2.7.a [...] relocation R_X86_64_32` when compiling
 
 The error is usually encountered when compiling YCM on Centos or RHEL. The full
 error looks something like the following:
@@ -2608,7 +2608,7 @@ version of libpython on your machine (for instance,
 `-DPYTHON_LIBRARY=/usr/lib/libpython2.7.so`). Naturally, this means you'll have
 to go through the full installation guide by hand.
 
-### I get `Vim: Caught deadly signal SEGV` on Vim startup
+* I get `Vim: Caught deadly signal SEGV` on Vim startup
 
 This can happen on some Linux distros. If you encounter this situation, run Vim
 under `gdb`. You'll probably see something like this in the output when Vim
@@ -2624,7 +2624,7 @@ you are using a correct `libclang.so`. We recommend downloading prebuilt
 binaries from llvm.org.
 
 
-### I get `Fatal Python error: PyThreadState_Get: no current thread` on startup
+* I get `Fatal Python error: PyThreadState_Get: no current thread` on startup
 
 This is caused by linking a static version of `libpython` into ycmd's
 `ycm_core.so`.  This leads to multiple copies of the python interpreter loaded
@@ -2641,12 +2641,12 @@ with `--enable-framework`):
   `PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install {version}`
 
 
-### `install.py` says python must be compiled with `--enable-framework`. Wat?
+* `install.py` says python must be compiled with `--enable-framework`. Wat?
 
 See the previous answer for how to ensure your python is built to support
 dynamic modules.
 
-### YCM does not read identifiers from my tags files
+* YCM does not read identifiers from my tags files
 
 First, put `let g:ycm_collect_identifiers_from_tags_files = 1` in your vimrc.
 
@@ -2670,13 +2670,13 @@ details. If you want to see which tag files YCM will read for a given buffer,
 run `:echo tagfiles()` with the relevant buffer active. Note that that function
 will only list tag files that already exist.
 
-### `CTRL-U` in insert mode does not work
+* `CTRL-U` in insert mode does not work
 
 YCM keeps you in a `completefunc` completion mode when you're typing in insert
 mode and Vim disables `<C-U>` in completion mode as a "feature." Sadly there's
 nothing I can do about this.
 
-### YCM conflicts with UltiSnips TAB key usage
+* YCM conflicts with UltiSnips TAB key usage
 
 YCM comes with support for UltiSnips (snippet suggestions in the popup menu),
 but you'll have to change the UltiSnips mappings. See `:h UltiSnips-triggers` in
@@ -2689,7 +2689,7 @@ g:UltiSnipsJumpForwardTrigger
 g:UltiSnipsJumpBackwardTrigger
 ```
 
-### Snippets added with `:UltiSnipsAddFiletypes` do not appear in the popup menu
+* Snippets added with `:UltiSnipsAddFiletypes` do not appear in the popup menu
 
 For efficiency, YCM only fetches UltiSnips snippets in specific scenarios like
 visiting a buffer or setting its filetype. You can force YCM to retrieve them by
@@ -2699,7 +2699,7 @@ manually triggering the `FileType` autocommand:
 :doautocmd FileType
 ```
 
-### Why isn't YCM just written in plain VimScript, FFS?
+* Why isn't YCM just written in plain VimScript, FFS?
 
 Because of the identifier completion engine and subsequence-based filtering.
 Let's say you have _many_ dozens of files open in a single Vim instance (I often
@@ -2713,7 +2713,7 @@ with VimScript. I've tried, and the language is just too slow. No, you can't get
 acceptable performance even if you limit yourself to just the identifiers in the
 current file and simple prefix-based filtering.
 
-### Why does YCM demand such a recent version of Vim?
+* Why does YCM demand such a recent version of Vim?
 
 During YCM's development several show-stopper bugs were encountered in Vim.
 Those needed to be fixed upstream (and were). A few months after those bugs were
@@ -2724,23 +2724,23 @@ landed in Vim 7.3.584 (and a few commits before that), and given the current
 availability of Vim 7.4.143, which features improved events for text change
 detection, it has been chosen.
 
-### I get annoying messages in Vim's status area when I type
+* I get annoying messages in Vim's status area when I type
 
 If you're referring to the `User defined completion <bla bla> back at original`
 and similar, then just update to Vim 7.4.314 (or later) and they'll go away.
 
-### Nasty bugs happen if I have the `vim-autoclose` plugin installed
+* Nasty bugs happen if I have the `vim-autoclose` plugin installed
 
 Use the [delimitMate][] plugin instead. It does the same thing without
 conflicting with YCM.
 
-### Is there some sort of YCM mailing list? I have questions
+* Is there some sort of YCM mailing list? I have questions
 
 If you have questions about the plugin or need help, please use the
 [ycm-users][] mailing list, _don't_ create issues on the tracker. The tracker is
 for bug reports and feature requests.
 
-### I get an internal compiler error when installing
+* I get an internal compiler error when installing
 
 This can be a problem on virtual servers with limited memory. A possible
 solution is to add more swap memory. A more practical solution would be to force
@@ -2751,7 +2751,7 @@ setting the `YCM_CORES` environment variable to `1`. Example:
 YCM_CORES=1 ./install.py --clang-completer
 ```
 
-### I get weird errors when I press `Ctrl-C` in Vim
+* I get weird errors when I press `Ctrl-C` in Vim
 
 _Never_ use `Ctrl-C` in Vim.
 
@@ -2769,7 +2769,7 @@ is `inoremap jk <Esc>`. This is right on the home row, it's an incredibly rare
 digraph in English and if you ever need to type those two chars in sequence in
 insert mode, you just type `j`, then wait 500ms, then type `k`.
 
-### Why did YCM stop using Syntastic for diagnostics display?
+* Why did YCM stop using Syntastic for diagnostics display?
 
 Previously, YCM would send any diagnostics it would receive from the libclang
 semantic engine to Syntastic for display as signs in the gutter, red squiggles
@@ -2805,7 +2805,7 @@ Still, some Syntastic-specific configuration you might have had might not
 be supported by the new code. Please file issues on the tracker in such
 cases; if we find the request to be reasonable, we'll find a way to address it.
 
-### Completion doesn't work with the C++ standard library headers
+* Completion doesn't work with the C++ standard library headers
 
 This is caused by an issue with libclang that only affects some operating
 systems. Compiling with `clang` the binary will use the correct default header
@@ -2823,7 +2823,7 @@ the list of flags you return from your `FlagsForFile` function in your
 
 See [issue #303][issue-303] for details.
 
-### When I open a JavaScript file, I get an annoying warning about `.tern-project` file
+* When I open a JavaScript file, I get an annoying warning about `.tern-project` file
 
 Take a look at the [instructions for using the JavaScript
 completer](#javascript-semantic-completion).
@@ -2832,7 +2832,7 @@ If this is still really annoying, and you have a good reason not to have a
 `.tern-project` file, create an empty `.tern-config` file in your home directory
 and YCM will stop complaining.
 
-### When I start vim I get a runtime error saying `R6034 An application has made an attempt to load the C runtime library incorrectly.`
+* When I start vim I get a runtime error saying `R6034 An application has made an attempt to load the C runtime library incorrectly.`
 
 [CMake and other things seem to screw up the PATH with their own msvcrXX.dll
 versions.][identify-R6034-cause] Add the following to the very top of your vimrc
@@ -2858,21 +2858,21 @@ os.environ['PATH'] = ';'.join(path)
 EOF
 ```
 
-### I hear that YCM only supports Python 2, is that true?
+* I hear that YCM only supports Python 2, is that true?
 
 **No.** Both the Vim client and the [ycmd server][ycmd] run on Python 2 or 3. If
 you work on a Python 3 project, you may need to set `g:ycm_python_binary_path`
 to the Python interpreter you use for your project to get completions for that
 version of Python.
 
-### On Windows I get `E887: Sorry, this command is disabled, the Python's site module could not be loaded`
+* On Windows I get `E887: Sorry, this command is disabled, the Python's site module could not be loaded`
 
 If you are running vim on Windows with Python 2.7.11, this is likely caused by
 a [bug][vim_win-python2.7.11-bug]. Follow this [workaround]
 [vim_win-python2.7.11-bug_workaround] or use a different version (Python 2.7.12
 does not suffer from the bug).
 
-### I can't complete python packages in a virtual environment.
+* I can't complete python packages in a virtual environment.
 
 This means that the Python used to run [JediHTTP][] is not the Python of the
 virtual environment you're in. To resolve this you either set
