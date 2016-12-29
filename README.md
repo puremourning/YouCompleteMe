@@ -163,8 +163,8 @@ automatically when you run `clang` for the first time, or manually by running
 Install CMake. Preferably with [Homebrew][brew], but here's the [stand-alone
 CMake installer][cmake-download].
 
-_If_ you have installed a Homebrew Python and/or Homebrew MacVim, see the _FAQ_
-for details.
+_If_ you have installed a Homebrew Python and/or Homebrew MacVim, see the
+[FAQ](#FAQ) for details.
 
 Compiling YCM **with** semantic support for C-family languages:
 
@@ -484,7 +484,7 @@ not just copy the shell commands. Replace `~` by `%USERPROFILE%` in them and use
 the right Vim home directory. It should be `vimfiles` by default instead of
 `.vim`.
 
-See the _FAQ_ if you have any issues.
+See the [FAQ](#FAQ) if you have any issues.
 
 **Remember:** YCM is a plugin with a compiled component. If you **update** YCM
 using Vundle and the ycm_core library APIs have changed (happens
@@ -1941,7 +1941,7 @@ format from "plain" ctags is NOT supported. Ctags needs to be called with the
 `--fields=+l` option (that's a lowercase `L`, not a one) because YCM needs the
 `language:<lang>` field in the tags output.
 
-See the _FAQ_ for pointers if YCM does not appear to read your tag files.
+See the [FAQ](#FAQ) for pointers if YCM does not appear to read your tag files.
 
 This option is off by default because it makes Vim slower if your tags are on a
 network directory.
@@ -2424,7 +2424,7 @@ found through the PATH.
 FAQ
 ---
 
-* I used to be able to `import vim` in `.ycm_extra_conf.py`, but now can't
+> I used to be able to `import vim` in `.ycm_extra_conf.py`, but now can't
 
 YCM was rewritten to use a client-server architecture where most of the logic is
 in the [ycmd server][ycmd]. So the magic `vim` module you could have previously
@@ -2438,12 +2438,12 @@ But fear not, you should be able to tweak your extra conf files to continue
 working by using the `g:ycm_extra_conf_vim_data` option. See the docs on that
 option for details.
 
-* On very rare occasions Vim crashes when I tab through the completion menu
+> On very rare occasions Vim crashes when I tab through the completion menu
 
 That's a very rare Vim bug most users never encounter. It's fixed in Vim
 7.4.72. Update to that version (or above) to resolve the issue.
 
-* I get `ImportError` exceptions that mention `PyInit_ycm_core` or `initycm_core`
+> I get `ImportError` exceptions that mention `PyInit_ycm_core` or `initycm_core`
 
 These errors are caused by building the YCM native libraries for Python 2 and
 trying to load them into a Python 3 process (or the other way around).
@@ -2465,13 +2465,13 @@ specific Python interpreter for `ycmd` is usually the easiest way to solve the
 problem. Common values for that option are `/usr/bin/python` and
 `/usr/bin/python3`.
 
-* I get a linker warning regarding `libpython` on Mac when compiling YCM
+> I get a linker warning regarding `libpython` on Mac when compiling YCM
 
 If the warning is `ld: warning: path '/usr/lib/libpython2.7.dylib' following -L
 not a directory`, then feel free to ignore it; it's caused by a limitation of
 CMake and is not an issue. Everything should still work fine.
 
-* I get a weird window at the top of my file when I use the semantic engine
+> I get a weird window at the top of my file when I use the semantic engine
 
 This is Vim's `preview` window. Vim uses it to show you extra information about
 something if such information is available. YCM provides Vim with such extra
@@ -2490,7 +2490,7 @@ If you don't want this window to ever show up, add `set completeopt-=preview` to
 your `vimrc`. Also make sure that the `g:ycm_add_preview_to_completeopt` option
 is set to `0`.
 
-* It appears that YCM is not working
+> It appears that YCM is not working
 
 In Vim, run `:messages` and carefully read the output. YCM will echo messages to
 the message log if it encounters problems. It's likely you misconfigured
@@ -2502,7 +2502,7 @@ the compile flags for the current file if the file is a C-family language file
 and you have compiled in Clang support. Logfiles can be opened in the editor
 using [the `:YcmToggleLogs` command](#the-ycmtogglelogs-command).
 
-* Sometimes it takes much longer to get semantic completions than normal
+> Sometimes it takes much longer to get semantic completions than normal
 
 This means that libclang (which YCM uses for C-family semantic completion)
 failed to pre-compile your file's preamble. In other words, there was an error
@@ -2513,7 +2513,7 @@ Bottom line, if libclang can't pre-compile your file's preamble because there
 were errors in it, you're going to get slow completions because there's no AST
 cache.
 
-* YCM auto-inserts completion strings I don't want!
+####### YCM auto-inserts completion strings I don't want!
 
 This means you probably have some mappings that interfere with YCM's internal
 ones. Make sure you don't have something mapped to `<C-p>`, `<C-x>` or `<C-u>`
@@ -2523,7 +2523,7 @@ YCM _never_ selects something for you; it just shows you a menu and the user has
 to explicitly select something. If something is being selected automatically,
 this means there's a bug or a misconfiguration somewhere.
 
-* I get a `E227: mapping already exists for <blah>` error when I start Vim
+####### I get a `E227: mapping already exists for <blah>` error when I start Vim
 
 This means that YCM tried to set up a key mapping but failed because you already
 had something mapped to that key combination. The `<blah>` part of the message
