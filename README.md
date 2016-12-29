@@ -1199,19 +1199,19 @@ the available locations and opened to full width at the bottom of the screen.
 You can change this behavior by using [the `YcmQuickFixOpened`
 autocommand](#the-ycmquickfixopened-autocommand).
 
-#### The `GoToInclude` subcommand
+#### The `YcmCompleter GoToInclude` subcommand
 
 Looks up the current line for a header and jumps to it.
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
-#### The `GoToDeclaration` subcommand
+#### The `YcmCompleter GoToDeclaration` subcommand
 
 Looks up the symbol under the cursor and jumps to its declaration.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs, go, python, rust`
 
-#### The `GoToDefinition` subcommand
+#### The `YcmCompleter GoToDefinition` subcommand
 
 Looks up the symbol under the cursor and jumps to its definition.
 
@@ -1223,7 +1223,7 @@ with `#include` directives (directly or indirectly) in that file.
 Supported in filetypes: `c, cpp, objc, objcpp, cs, go, javascript, python,
 rust, typescript`
 
-#### The `GoTo` subcommand
+#### The `YcmCompleter GoTo` subcommand
 
 This command tries to perform the "most sensible" GoTo operation it can.
 Currently, this means that it tries to look up the symbol under the cursor and
@@ -1234,7 +1234,7 @@ jump to it. For C#, implementations are also considered and preferred.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs, go, javascript, python, rust`
 
-#### The `GoToImprecise` subcommand
+#### The `YcmCompleter GoToImprecise` subcommand
 
 WARNING: This command trades correctness for speed!
 
@@ -1247,7 +1247,7 @@ latency.
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
-#### The `GoToReferences` subcommand
+#### The `YcmCompleter GoToReferences` subcommand
 
 This command attempts to find all of the references within the project to the
 identifier under the cursor and populates the quickfix list with those
@@ -1255,7 +1255,7 @@ locations.
 
 Supported in filetypes: `javascript, python, typescript`
 
-#### The `GoToImplementation` subcommand
+#### The `YcmCompleter GoToImplementation` subcommand
 
 Looks up the symbol under the cursor and jumps to its implementation (i.e.
 non-interface). If there are multiple implementations, instead provides a list
@@ -1263,7 +1263,7 @@ of implementations to choose from.
 
 Supported in filetypes: `cs`
 
-#### The `GoToImplementationElseDeclaration` subcommand
+#### The `YcmCompleter GoToImplementationElseDeclaration` subcommand
 
 Looks up the symbol under the cursor and jumps to its implementation if one,
 else jump to its declaration. If there are multiple implementations, instead
@@ -1276,7 +1276,7 @@ Supported in filetypes: `cs`
 These commands are useful for finding static information about the code, such
 as the types of variables, viewing declarations and documentation strings.
 
-#### The `GetType` subcommand
+#### The `YcmCompleter GetType` subcommand
 
 Echos the type of the variable or method under the cursor, and where it differs,
 the derived type.
@@ -1307,7 +1307,7 @@ NOTE: Causes re-parsing of the current translation unit.
 
 Supported in filetypes: `c, cpp, objc, objcpp, javascript, typescript`
 
-#### The `GetTypeImprecise` subcommand
+#### The `YcmCompleter GetTypeImprecise` subcommand
 
 WARNING: This command trades correctness for speed!
 
@@ -1320,7 +1320,7 @@ latency.
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
-#### The `GetParent` subcommand
+#### The `YcmCompleter GetParent` subcommand
 
 Echos the semantic parent of the point under the cursor.
 
@@ -1351,7 +1351,7 @@ NOTE: Causes re-parsing of the current translation unit.
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
-#### The `GetDoc` subcommand
+#### The `YcmCompleter GetDoc` subcommand
 
 Displays the preview window populated with quick info about the identifier
 under the cursor. Depending on the file type, this includes things like:
@@ -1364,7 +1364,7 @@ under the cursor. Depending on the file type, this includes things like:
 Supported in filetypes: `c, cpp, objc, objcpp, cs, python, typescript,
 javascript, rust`
 
-#### The `GetDocImprecise` subcommand
+#### The `YcmCompleter GetDocImprecise` subcommand
 
 WARNING: This command trades correctness for speed!
 
@@ -1383,7 +1383,7 @@ These commands make changes to your source code in order to perform refactoring
 or code correction. YouCompleteMe does not perform any action which cannot be
 undone, and never saves or writes files to the disk.
 
-#### The `FixIt` subcommand
+#### The `YcmCompleter FixIt` subcommand
 
 Where available, attempts to make changes to the buffer to correct diagnostics
 on the current line. Where multiple suggestions are available (such as when
@@ -1420,7 +1420,7 @@ where after fixing one diagnostic, another fix-it is available.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs`
 
-#### The `RefactorRename <new name>` subcommand
+#### The `YcmCompleter RefactorRename <new name>` subcommand
 
 In supported file types, this command attempts to perform a semantic rename of
 the identifier under the cursor. This includes renaming declarations,
@@ -1470,7 +1470,7 @@ These commands are for general administration, rather than IDE-like features.
 They cover things like the semantic engine server instance and compilation
 flags.
 
-#### The `RestartServer` subcommand
+#### The `YcmCompleter RestartServer` subcommand
 
 Restarts the semantic-engine-as-localhost-server for those semantic engines that
 work as separate servers that YCM talks to.
@@ -1484,7 +1484,7 @@ python binary to use to restart the Python semantic engine.
 
 Supported in filetypes: `cs, go, javascript, python, rust, typescript`
 
-#### The `ClearCompilationFlagCache` subcommand
+#### The `YcmCompleter ClearCompilationFlagCache` subcommand
 
 YCM caches the flags it gets from the `FlagsForFile` function in your
 `ycm_extra_conf.py` file if you return them with the `do_cache` parameter set to
@@ -1496,7 +1496,7 @@ This command clears that cache entirely. YCM will then re-query your
 
 Supported in filetypes: `c, cpp, objc, objcpp`
 
-#### The `ReloadSolution` subcommand
+#### The `YcmCompleter ReloadSolution` subcommand
 
 Instruct the Omnisharp server to clear its cache and reload all files from disk.
 This is useful when files are added, removed, or renamed in the solution, files
