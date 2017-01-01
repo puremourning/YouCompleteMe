@@ -24,17 +24,12 @@ from __future__ import absolute_import
 
 import sys
 import os
-import concurrent.futures
 
 
 # Can't import these from paths.py because that uses `future` imports
 DIR_OF_CURRENT_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_OF_YCMD = os.path.join( DIR_OF_CURRENT_SCRIPT, '..', '..', 'third_party',
                             'ycmd' )
-
-import concurrent.futures
-_INIT_EXECUTOR = concurrent.futures.ThreadPoolExecutor( max_workers = 1 )
-
 
 def SetUpSystemPaths():
   sys.path.insert( 0, os.path.join( DIR_OF_YCMD ) )
@@ -50,6 +45,10 @@ def SetUpYCMAsync():
   from ycm import base
   from ycmd import user_options_store
   import signal
+  import concurrent.futures
+  INIT_EXECUTOR = concurrent.futures.ThreadPoolExecutor( max_workers = 1 )
+
+
 
   # Force the Python interpreter embedded in Vim (in which we are running) to
   # ignore the SIGINT signal. This helps reduce the fallout of a user pressing
@@ -61,7 +60,7 @@ def SetUpYCMAsync():
 
   base.LoadJsonDefaultsIntoVim()
   user_options_store.SetAll( base.BuildServerConf() )
-  return _INIT_EXECUTOR.submit( SetUpYCM )
+  return INIT_EXECUTOR.submit( SetUpYCM )
 
 
 def SetUpYCM():

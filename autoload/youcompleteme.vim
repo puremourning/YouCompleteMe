@@ -130,7 +130,11 @@ EOF
 pr.disable()
 
 import pstats
-from io import StringIO
+from future.utils import PY2
+if PY2:
+  from StringIO import StringIO
+else:
+  from io import StringIO
 import logging
 
 stream = StringIO()
@@ -226,7 +230,6 @@ sys.path.insert( 0, os.path.join( script_folder, '..', 'python' ) )
 
 from ycm.setup import SetUpSystemPaths, SetUpYCMAsync
 
-# We enclose this code in a try/except block to avoid backtraces in Vim.
 SetUpSystemPaths()
 
 # Import the modules used in this file.
