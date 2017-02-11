@@ -51,6 +51,7 @@ from ycm.client.debug_info_request import ( SendDebugInfoRequest,
 from ycm.client.omni_completion_request import OmniCompletionRequest
 from ycm.client.event_notification import SendEventNotificationAsync
 from ycm.client.shutdown_request import SendShutdownRequest
+from ycm.client.messages_request import MessagesPoll
 
 
 def PatchNoProxy():
@@ -116,6 +117,7 @@ class YouCompleteMe( object ):
     self._omnicomp = OmniCompleter( user_options )
     self._buffers = BufferDict( user_options )
     self._latest_completion_request = None
+    self._message_poll_request = None
     self._logger = logging.getLogger( 'ycm' )
     self._client_logfile = None
     self._server_stdout = None
@@ -367,6 +369,15 @@ class YouCompleteMe( object ):
     return self.CurrentBuffer().NeedsReparse()
 
 
+  def OnPeriodicTick( self ):
+    # HAAAAAAAAAAACK: This is basically a timer spin here, but the client only
+    # calls this once every 250ms, so not a worst-case scenario
+    if not self._message_poll_request:
+      self._message_poll_request = MessagesPoll()
+
+    self._message_poll_request.Poll()
+
+
   def OnFileReadyToParse( self ):
     if not self.IsServerAlive():
       self.NotifyUserIfServerCrashed()
@@ -387,6 +398,7 @@ class YouCompleteMe( object ):
     SendEventNotificationAsync(
         'BufferUnload',
         filepath = utils.ToUnicode( deleted_buffer_file ) )
+    self._message_poll_request.Poll()
 
 
   def OnBufferVisit( self ):

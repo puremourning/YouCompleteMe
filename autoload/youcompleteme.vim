@@ -71,6 +71,13 @@ function! s:Pyeval( eval_string )
 endfunction
 
 
+function! youcompleteme#Tick( timer )
+  if s:AllowedToCompleteInCurrentBuffer()
+    exec s:python_command "ycm_state.OnPeriodicTick()"
+  endif
+endfunction
+
+
 function! youcompleteme#Enable()
   call s:SetUpBackwardsCompatibility()
 
@@ -91,6 +98,12 @@ function! youcompleteme#Enable()
 
   call s:SetUpSigns()
   call s:SetUpSyntaxHighlighting()
+
+  if has( 'timers' )
+    " HAAACK: We just always call our tick every 250ms
+    " TODO: Use the timer infrastructure that @micbou subsequently added
+    call timer_start( 250, 'youcompleteme#Tick', { 'repeat': -1 } )
+  endif
 
   call youcompleteme#EnableCursorMovedAutocommands()
   augroup youcompleteme
