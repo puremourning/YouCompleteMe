@@ -25,6 +25,10 @@ from builtins import *  # noqa
 from ycm.client.base_request import ( BaseRequest, BuildRequestData,
                                       JsonFromFuture, HandleServerException )
 
+import json
+import logging
+_logger = logging.getLogger( __name__ )
+
 
 class EventNotification( BaseRequest ):
   def __init__( self, event_name, filepath = None, extra_data = None ):
@@ -59,6 +63,8 @@ class EventNotification( BaseRequest ):
 
     with HandleServerException( truncate = True ):
       self._cached_response = JsonFromFuture( self._response_future )
+      _logger.debug( 'Diags: {0}'.format(
+        json.dumps( self._cached_response, indent=2 ) ) )
 
     return self._cached_response if self._cached_response else []
 
