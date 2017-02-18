@@ -53,23 +53,36 @@ class MessagesPoll( BaseRequest ):
 
   def Poll( self ):
     """This should be called regularly to check for new messages. Use
-    HandleMessages to get any messages received."""
+    HandleMessages to get any messages received. Returns True if Poll should be
+    caled again in a while. Returns False when the completer or server indicated
+    that further polling should not be done for the requested filetype"""
 
     if self._response_future is None:
       # First poll
       self._SendRequest()
-      return
+      return True
 
     if not self._response_future.done():
       # Nothing yet...
-      return
+      return True
 
+    # TODO: Specifically handle an error which says that the server completer
+    # doesn't support this message. Resending the query would be pointless in
+    # that case.
     with HandleServerException( truncate = True ):
       response = JsonFromFuture( self._response_future )
 
       if not isinstance( response, bool ):
         if 'message' in response:
           PostVimMessage( response[ 'message' ], warning=False, truncate=True )
+      elif not response:
+        # Don't keep polling for this filetype
+        # TODO: Implement that in the client
+        return False
 
-    # Start the next poll
-    self._SendRequest()
+      # Start the next poll (only if the last poll didn't raise an exception)
+      self._SendRequest()
+
+    return True
+
+

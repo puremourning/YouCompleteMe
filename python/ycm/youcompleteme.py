@@ -375,7 +375,7 @@ class YouCompleteMe( object ):
     if not self._message_poll_request:
       self._message_poll_request = MessagesPoll()
 
-    self._message_poll_request.Poll()
+    return self._message_poll_request.Poll()
 
 
   def OnFileReadyToParse( self ):
