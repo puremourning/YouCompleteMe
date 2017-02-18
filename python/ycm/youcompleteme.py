@@ -124,6 +124,7 @@ class YouCompleteMe( object ):
     self._SetUpLogging()
     self._SetUpServer()
     self._ycmd_keepalive.Start()
+    self._last_overloads = []
 
 
   def _SetUpServer( self ):
@@ -313,14 +314,27 @@ class YouCompleteMe( object ):
 
 
   def GetCompletionResponse( self ):
-    ( response, overloads ) = self._latest_completion_request.Response()
+    ( response, overloads, flags ) = self._latest_completion_request.Response()
     response[ 'completions' ] = base.AdjustCandidateInsertionText(
         response[ 'completions' ] )
 
-    if len( overloads ):
-      vimsupport.ShowFunctionSignature( overloads )
-    else:
-     vimsupport.ClearFunctionSignature()
+    if 'START_HINTS' in flags:
+      self._last_overloads = overloads
+      if overloads:
+        self._logger.debug( 'Starting overloads due to flag [{0}]'.format(
+          overloads ) )
+        vimsupport.ShowFunctionSignature( overloads )
+      else:
+        self._logger.debug( 'Clearing overloads due to start flag and empty' )
+        self._last_overloads = []
+        vimsupport.ClearFunctionSignature()
+    elif 'STOP_HINTS' in flags:
+      self._logger.debug( 'Clearing overloads due to flag' )
+      self._last_overloads = []
+      vimsupport.ClearFunctionSignature()
+    elif self._last_overloads:
+      self._logger.debug( 'Using overloads from cache' )
+      vimsupport.ShowFunctionSignature( self._last_overloads )
 
     return response
 
@@ -476,6 +490,8 @@ class YouCompleteMe( object ):
 
 
   def OnInsertLeave( self ):
+    self._logger.debug( 'Clearing cache due to exit insert mode' )
+    self._last_overloads = []
     SendEventNotificationAsync( 'InsertLeave' )
 
 

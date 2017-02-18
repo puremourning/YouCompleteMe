@@ -32,6 +32,10 @@ from ycm import vimsupport
 _logger = logging.getLogger( __name__ )
 
 
+import logging
+_logger = logging.getLogger( __name__ )
+
+
 class CompletionRequest( BaseRequest ):
   def __init__( self, request_data ):
     super( CompletionRequest, self ).__init__()
@@ -58,6 +62,7 @@ class CompletionRequest( BaseRequest ):
     if not self._response_future:
       return { 'completions': [],
                'overloads': [],
+               'flags': [],
                'completion_start_column': -1 }
 
     response = self.HandleFuture( self._response_future,
@@ -65,6 +70,7 @@ class CompletionRequest( BaseRequest ):
     if not response:
       return { 'completions': [],
                'overloads': [],
+               'flags': [],
                'completion_start_column': -1 }
 
     # Vim may not be able to convert the 'errors' entry to its internal format
@@ -75,14 +81,16 @@ class CompletionRequest( BaseRequest ):
       _logger.error( exception )
       DisplayServerException( exception, truncate_message = True )
 
-    return _ExtractOverloads( response[ 'completions' ] )
+    ( completions, overloads ) = _ExtractOverloads( response[ 'completions' ] )
+    flags = response[ 'flags' ] if 'flags' in response else []
+    return ( completions, overloads, flags )
 
 
   def Response( self ):
-    ( response, overloads ) = self.RawResponse()
+    ( response, overloads, flags ) = self.RawResponse()
     response[ 'completions' ] = _ConvertCompletionDatasToVimDatas(
         response[ 'completions' ] )
-    return ( response, overloads )
+    return ( response, overloads, flags )
 
 
   def OnCompleteDone( self ):
@@ -136,15 +144,6 @@ class CompletionRequest( BaseRequest ):
       namespace = namespaces[ choice ]
     else:
       namespace = namespaces[ 0 ]
-=======
-      return _ExtractOverloads( response[ 'completions' ] )
-    return ( [], [] )
-
-
-  def Response( self ):
-    ( completions, overloads ) = self.RawResponse()
-    return ( _ConvertCompletionDatasToVimDatas( completions ), overloads )
->>>>>>> 4b131b75... Display current argument in status line
 
     vimsupport.InsertNamespace( namespace )
 
@@ -245,7 +244,6 @@ def _ConvertCompletionDataToVimData( completion_identifier, completion_data ):
 
 
 def _ConvertCompletionDatasToVimDatas( response_data ):
-<<<<<<< HEAD
   return [ _ConvertCompletionDataToVimData( i, x )
            for i, x in enumerate( response_data ) ]
 

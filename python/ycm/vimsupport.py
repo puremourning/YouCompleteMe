@@ -1264,6 +1264,7 @@ def VimVersionAtLeast( version_string ):
 
 
 def ShowFunctionSignature( overloads ):
+  signatures = []
   for _, overload in enumerate( overloads ):
     if 'extra_menu_info' not in overload:
       # FIXME: HACK!! This is working around some sort of bug where we get an
@@ -1274,11 +1275,16 @@ def ShowFunctionSignature( overloads ):
                   + ' '
                   + overload[ 'menu_text' ] )
 
-    PostVimMessage( signature, warning = False, truncate = True  )
+    signatures.append( "'{0}'".format( EscapeForVim( signature ) ) )
+
+  if not len( signatures ):
+    ClearFunctionSignature()
     return
 
-  ClearFunctionSignature()
+
+  vim.command( "call hint_start( col('.'), [ {0} ] )".format(
+    ','.join( signatures ) ) )
 
 
 def ClearFunctionSignature():
-  vim.command( 'redraw' )
+  vim.command( 'call hint_clear()' )
