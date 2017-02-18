@@ -31,6 +31,10 @@ from ycm.client.base_request import ( BaseRequest, JsonFromFuture,
 TIMEOUT_SECONDS = 0.5
 
 
+import logging
+_logger = logging.getLogger( __name__ )
+
+
 class CompletionRequest( BaseRequest ):
   def __init__( self, request_data ):
     super( CompletionRequest, self ).__init__()
@@ -50,7 +54,7 @@ class CompletionRequest( BaseRequest ):
 
   def RawResponse( self ):
     if not self._response_future:
-      return ( [], [] )
+      return ( [], [], [] )
     with HandleServerException( truncate = True ):
       response = JsonFromFuture( self._response_future )
 
@@ -59,13 +63,20 @@ class CompletionRequest( BaseRequest ):
         with HandleServerException( truncate = True ):
           raise MakeServerException( e )
 
-      return _ExtractOverloads( response[ 'completions' ] )
-    return ( [], [] )
+      ( completions, overloads ) = _ExtractOverloads( response[ 'completions' ] )
+
+      flags = response[ 'flags' ] if 'flags' in response else []
+
+      return ( completions, overloads, flags )
+
+    return ( [], [], [] )
 
 
   def Response( self ):
-    ( completions, overloads ) = self.RawResponse()
-    return ( _ConvertCompletionDatasToVimDatas( completions ), overloads )
+    ( completions, overloads, flags ) = self.RawResponse()
+    return ( _ConvertCompletionDatasToVimDatas( completions ),
+             overloads,
+             flags )
 
 
 def ConvertCompletionDataToVimData( completion_data ):

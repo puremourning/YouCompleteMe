@@ -132,6 +132,7 @@ class YouCompleteMe( object ):
     self._complete_done_hooks = {
       'cs': lambda self: self._OnCompleteDone_Csharp()
     }
+    self._last_overloads = []
 
   def _SetupServer( self ):
     self._available_completers = {}
@@ -288,17 +289,36 @@ class YouCompleteMe( object ):
     while not request.Done():
       try:
         if vimsupport.GetBoolValue( 'complete_check()' ):
+          if self._last_overloads:
+            self._logger.debug( 'complete_check(): using cache' )
+            vimsupport.ShowFunctionSignature( self._last_overloads )
           return { 'words' : [], 'refresh' : 'always' }
       except KeyboardInterrupt:
+        if self._last_overloads:
+          self._logger.debug( 'KeyboardInterrupt: using cache' )
+          vimsupport.ShowFunctionSignature( self._last_overloads )
         return { 'words' : [], 'refresh' : 'always' }
 
-    ( completions, overloads ) = request.Response()
+    ( completions, overloads, flags ) = request.Response()
     results = base.AdjustCandidateInsertionText( completions )
 
-    if len( overloads ):
-      vimsupport.ShowFunctionSignature( overloads )
-    else:
-     vimsupport.ClearFunctionSignature()
+    if 'START_HINTS' in flags:
+      self._last_overloads = overloads
+      if overloads:
+        self._logger.debug( 'Starting overloads due to flag [{0}]'.format(
+          overloads ) )
+        vimsupport.ShowFunctionSignature( overloads )
+      else:
+        self._logger.debug( 'Clearing overloads due to start flag and empty' )
+        self._last_overloads = []
+        vimsupport.ClearFunctionSignature()
+    elif 'STOP_HINTS' in flags:
+      self._logger.debug( 'Clearing overloads due to flag' )
+      self._last_overloads = []
+      vimsupport.ClearFunctionSignature()
+    elif self._last_overloads:
+      self._logger.debug( 'Using overloads from cache' )
+      vimsupport.ShowFunctionSignature( self._last_overloads )
 
     return { 'words' : results, 'refresh' : 'always' }
 
@@ -383,6 +403,8 @@ class YouCompleteMe( object ):
 
 
   def OnInsertLeave( self ):
+    self._logger.debug( 'Clearing cache due to exit insert mode' )
+    self._last_overloads = []
     if not self.IsServerAlive():
       return
     SendEventNotificationAsync( 'InsertLeave' )
