@@ -73,6 +73,8 @@ endfunction
 
 function! youcompleteme#Tick( timer )
   if s:AllowedToCompleteInCurrentBuffer()
+    " TODO: Stop this tick for the current file type if OnPeriodicTick returns
+    " false
     exec s:python_command "ycm_state.OnPeriodicTick()"
   endif
 endfunction
