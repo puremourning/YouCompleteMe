@@ -69,7 +69,7 @@ class MessagesPoll( BaseRequest ):
     # TODO: Specifically handle an error which says that the server completer
     # doesn't support this message. Resending the query would be pointless in
     # that case.
-    with HandleServerException( truncate = True ):
+    with HandleServerException( display = False ):
       response = JsonFromFuture( self._response_future )
 
       if not isinstance( response, bool ):
