@@ -899,7 +899,7 @@ class YouCompleteMe:
     vimsupport.PostVimMessage(
         'Forcing compilation, this will block Vim until done.',
         warning = False )
-    self.OnFileReadyToParse()
+    self.OnFileReadyToParse( 0 )
     self.HandleFileParseRequest( block = True )
     vimsupport.PostVimMessage( 'Diagnostics refreshed', warning = False )
     return True
