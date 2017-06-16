@@ -130,7 +130,8 @@ class YouCompleteMe( object ):
     self._SetUpServer()
     self._ycmd_keepalive.Start()
     self._complete_done_hooks = {
-      'cs': lambda self: self._OnCompleteDone_Csharp()
+      'cs': lambda self: self._OnCompleteDone_Csharp(),
+      'java': lambda self: self._OnCompleteDone_Java()
     }
 
 
@@ -531,6 +532,27 @@ class YouCompleteMe( object ):
       return None
     return completion[ "extra_data" ][ "required_namespace_import" ]
 
+
+  def _OnCompleteDone_Java( self ):
+    completions = self.GetCompletionsUserMayHaveCompleted()
+    fixits = [ self._GetFixItCompletion( c ) for c in completions ]
+    fixits = [ f for f in fixits if f ]
+    if not fixits:
+      return
+
+    for f in fixits:
+      # Just apply them all. Technically, we might offer some sort of choice
+      # here
+      for g in f:
+        vimsupport.ReplaceChunks( g[ 'chunks' ] )
+
+
+  def _GetFixItCompletion( self, completion ):
+    if ( "extra_data" not in completion
+         or "fixits" not in completion[ "extra_data" ] ):
+      return None
+
+    return completion[ "extra_data" ][ "fixits" ]
 
   def GetErrorCount( self ):
     return self.CurrentBuffer().GetErrorCount()
