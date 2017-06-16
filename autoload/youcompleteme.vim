@@ -350,6 +350,9 @@ function! s:TurnOffSyntasticForCFamily()
   let g:syntastic_c_checkers = []
   let g:syntastic_objc_checkers = []
   let g:syntastic_objcpp_checkers = []
+
+  " TODO: Only do this if we have java enabled in the server?
+  let g:syntastic_java_checkers = []
 endfunction
 
 
