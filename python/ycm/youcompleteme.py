@@ -707,7 +707,7 @@ class YouCompleteMe( object ):
     vimsupport.PostVimMessage(
         'Forcing compilation, this will block Vim until done.',
         warning = False )
-    self.OnFileReadyToParse( 0 )
+    self.OnFileReadyToParse()
     self.HandleFileParseRequest( block = True )
     vimsupport.PostVimMessage( 'Diagnostics refreshed', warning = False )
     return True
