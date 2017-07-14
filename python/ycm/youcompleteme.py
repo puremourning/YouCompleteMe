@@ -365,6 +365,9 @@ class YouCompleteMe( object ):
     if not self._message_poll_request:
       self._message_poll_request = MessagesPoll()
 
+    if not self.IsServerAlive() or not self.IsServerReady():
+        return None
+
     # FIXME: the response needs to find the buffer object based on the URI.
     # Repeat: CurrentBuffer() is incorrect here
     return self._message_poll_request.Poll(
