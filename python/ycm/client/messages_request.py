@@ -51,7 +51,7 @@ class MessagesPoll( BaseRequest ):
     return
 
 
-  def Poll( self ):
+  def Poll( self, diagnostic_interface ):
     """This should be called regularly to check for new messages. Use
     HandleMessages to get any messages received. Returns True if Poll should be
     caled again in a while. Returns False when the completer or server indicated
@@ -75,6 +75,9 @@ class MessagesPoll( BaseRequest ):
       if not isinstance( response, bool ):
         if 'message' in response:
           PostVimMessage( response[ 'message' ], warning=False, truncate=True )
+        elif 'diagnostics' in response:
+          diagnostic_interface.UpdateWithNewDiagnostics(
+            response[ 'diagnostics' ] )
       elif not response:
         # Don't keep polling for this filetype
         # TODO: Implement that in the client
@@ -84,5 +87,3 @@ class MessagesPoll( BaseRequest ):
       self._SendRequest()
 
     return True
-
-

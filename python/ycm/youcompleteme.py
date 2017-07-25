@@ -371,13 +371,15 @@ class YouCompleteMe( object ):
     return self.CurrentBuffer().NeedsReparse()
 
 
+  # TODO: Should this be handled by the Buffer abstraction
   def OnPeriodicTick( self ):
-    # HAAAAAAAAAAACK: This is basically a timer spin here, but the client only
-    # calls this once every 250ms, so not a worst-case scenario
     if not self._message_poll_request:
       self._message_poll_request = MessagesPoll()
 
-    return self._message_poll_request.Poll()
+    # FIXME: the response needs to find the buffer object based on the URI.
+    # Repeat: CurrentBuffer() is incorrect here
+    return self._message_poll_request.Poll(
+      self.CurrentBuffer()._diag_interface )
 
 
   def OnFileReadyToParse( self ):
@@ -400,7 +402,6 @@ class YouCompleteMe( object ):
     SendEventNotificationAsync(
         'BufferUnload',
         filepath = utils.ToUnicode( deleted_buffer_file ) )
-    self._message_poll_request.Poll()
 
 
   def OnBufferVisit( self ):
