@@ -445,10 +445,11 @@ class YouCompleteMe( object ):
     if not latest_completion_request or not latest_completion_request.Done():
       return []
 
-    completions = latest_completion_request.RawResponse()
+    completions = latest_completion_request.RawResponse()[ 'completions' ]
 
     result = self._FilterToMatchingCompletions( completions, True )
     result = list( result )
+
     if result:
       return result
 
@@ -466,10 +467,12 @@ class YouCompleteMe( object ):
   def _FilterToMatchingCompletions( self, completions, full_match_only ):
     """Filter to completions matching the item Vim said was completed"""
     completed = vimsupport.GetVariableValue( 'v:completed_item' )
+
+    match_keys = ( [ "word", "abbr", "menu", "info" ] if full_match_only
+                    else [ 'word' ] )
+
     for completion in completions:
       item = ConvertCompletionDataToVimData( completion )
-      match_keys = ( [ "word", "abbr", "menu", "info" ] if full_match_only
-                      else [ 'word' ] )
 
       def matcher( key ):
         return ( utils.ToUnicode( completed.get( key, "" ) ) ==
@@ -545,7 +548,7 @@ class YouCompleteMe( object ):
       # Just apply them all. Technically, we might offer some sort of choice
       # here
       for g in f:
-        vimsupport.ReplaceChunks( g[ 'chunks' ] )
+        vimsupport.ReplaceChunks( g[ 'chunks' ], silent=True )
 
 
   def _GetFixItCompletion( self, completion ):
