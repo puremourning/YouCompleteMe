@@ -61,8 +61,11 @@ class Buffer( object ):
 
 
   def UpdateDiagnostics( self ):
-    self._diag_interface.UpdateWithNewDiagnostics(
-      self._parse_request.Response() )
+    self.UpdateWithNewDiagnostics( self._parse_request.Response() )
+
+
+  def UpdateWithNewDiagnostics( self, diagnostics ):
+    self._diag_interface.UpdateWithNewDiagnostics( diagnostics )
 
 
   def PopulateLocationList( self ):
