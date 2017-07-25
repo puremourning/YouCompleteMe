@@ -30,7 +30,7 @@ import json
 import re
 from collections import defaultdict
 from ycmd.utils import ( ByteOffsetToCodepointOffset, GetCurrentDirectory,
-                         JoinLinesAsUnicode, ToBytes, ToUnicode )
+                         JoinLinesAsUnicode, ToBytes, ToUnicode, SplitLines )
 from ycmd import user_options_store
 
 BUFFER_COMMAND_MAP = { 'same-buffer'      : 'edit',
@@ -822,7 +822,7 @@ def ReplaceChunk( start, end, replacement_text, line_delta, char_delta,
 
   # NOTE: replacement_text is unicode, but all our offsets are byte offsets,
   # so we convert to bytes
-  replacement_lines = ToBytes( replacement_text ).splitlines( False )
+  replacement_lines = [ ToBytes( l ) for l in SplitLines( replacement_text ) ]
   if not replacement_lines:
     replacement_lines = [ bytes( b'' ) ]
   replacement_lines_count = len( replacement_lines )
