@@ -72,12 +72,15 @@ class MessagesPoll( BaseRequest ):
     with HandleServerException( display = False ):
       response = JsonFromFuture( self._response_future )
 
-      if not isinstance( response, bool ):
-        if 'message' in response:
-          PostVimMessage( response[ 'message' ], warning=False, truncate=True )
-        elif 'diagnostics' in response:
-          diagnostic_interface.UpdateWithNewDiagnostics(
-            response[ 'diagnostics' ] )
+      if isinstance( response, list ):
+        for notification in response:
+          if 'message' in notification:
+            PostVimMessage( notification[ 'message' ],
+                            warning = False,
+                            truncate = True )
+          elif 'diagnostics' in notification:
+            diagnostic_interface.UpdateWithNewDiagnostics(
+              notification[ 'diagnostics' ] )
       elif not response:
         # Don't keep polling for this filetype
         # TODO: Implement that in the client
