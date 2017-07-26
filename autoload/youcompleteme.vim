@@ -41,6 +41,10 @@ let s:pollers = {
       \   'server_ready': {
       \     'id': -1,
       \     'wait_milliseconds': 100
+      \   },
+      \   'receive_messages': {
+      \     'id': -1,
+      \     'wait_milliseconds': 250
       \   }
       \ }
 
@@ -71,11 +75,26 @@ function! s:Pyeval( eval_string )
 endfunction
 
 
-function! youcompleteme#Tick( timer )
-  if s:AllowedToCompleteInCurrentBuffer()
-    " TODO: Stop this tick for the current file type if OnPeriodicTick returns
-    " false
-    exec s:python_command "ycm_state.OnPeriodicTick()"
+function! s:ReceiveMessages( timer_id )
+  if !s:Pyeval( 'ycm_state.IsServerAlive()' )
+    return
+  endif
+
+  " The effect of the following line is that we don't actually process any
+  " messages (of any type) unless we're actively in a YCM buffer (of any type).
+  " This feels wrong, and we might as well do it even if YCM isn't active in
+  " the current buffer
+  " 
+  "if !s:AllowedToCompleteInCurrentBuffer()
+  "  return
+  "endif
+
+  let poll_again = s:Pyeval( 'ycm_state.OnPeriodicTick()' )
+
+  if poll_again
+    let s:pollers.receive_messages.id = timer_start(
+          \ s:pollers.receive_messages.wait_milliseconds,
+          \ function( 's:ReceiveMessages' ) )
   endif
 endfunction
 
@@ -100,12 +119,6 @@ function! youcompleteme#Enable()
 
   call s:SetUpSigns()
   call s:SetUpSyntaxHighlighting()
-
-  if has( 'timers' )
-    " HAAACK: We just always call our tick every 250ms
-    " TODO: Use the timer infrastructure that @micbou subsequently added
-    call timer_start( 250, 'youcompleteme#Tick', { 'repeat': -1 } )
-  endif
 
   call youcompleteme#EnableCursorMovedAutocommands()
   augroup youcompleteme
@@ -518,6 +531,13 @@ function! s:PollServerReady( timer_id )
   endif
 
   call s:OnFileTypeSet()
+
+  " Now that the server is ready, start polling it for asyncronous
+  " messages/diagnostics
+  let s:pollers.receive_messages.id = timer_start(
+        \ s:pollers.receive_messages.wait_milliseconds,
+        \ function( 's:ReceiveMessages' ) )
+
 endfunction
 
 
@@ -815,6 +835,7 @@ endfunction
 function! s:RestartServer()
   exec s:python_command "ycm_state.RestartServer()"
   call timer_stop( s:pollers.server_ready.id )
+  call timer_stop( s:pollers.receive_messages.id )
   let s:pollers.server_ready.id = timer_start(
         \ s:pollers.server_ready.wait_milliseconds,
         \ function( 's:PollServerReady' ) )
