@@ -99,10 +99,11 @@ CORE_OUTDATED_MESSAGE = (
   'YCM core library too old; PLEASE RECOMPILE by running the install.py '
   'script. See the documentation for more details.' )
 SERVER_IDLE_SUICIDE_SECONDS = 1800  # 30 minutes
-DIAGNOSTIC_UI_FILETYPES = set( [ 'cpp', 'cs', 'c', 'objc', 'objcpp',
-                                 'typescript', 'java' ] )
 CLIENT_LOGFILE_FORMAT = 'ycm_'
 SERVER_LOGFILE_FORMAT = 'ycmd_{port}_{std}_'
+
+from ycm.buffer import ( DIAGNOSTIC_UI_FILETYPES,
+                         DIAGNOSTIC_UI_ASYNC_FILETYPES )
 
 # Flag to set a file handle inheritable by child processes on Windows. See
 # https://msdn.microsoft.com/en-us/library/ms724935.aspx
@@ -581,7 +582,8 @@ class YouCompleteMe( object ):
 
 
   def DiagnosticUiSupportedForCurrentFiletype( self ):
-    return any( [ x in DIAGNOSTIC_UI_FILETYPES
+    return any( [ x in DIAGNOSTIC_UI_FILETYPES or 
+                  x in DIAGNOSTIC_UI_ASYNC_FILETYPES
                   for x in vimsupport.CurrentFiletypes() ] )
 
 
