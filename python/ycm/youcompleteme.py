@@ -571,7 +571,7 @@ class YouCompleteMe( object ):
 
 
   def DiagnosticUiSupportedForCurrentFiletype( self ):
-    return any( [ x in DIAGNOSTIC_UI_FILETYPES or 
+    return any( [ x in DIAGNOSTIC_UI_FILETYPES or
                   x in DIAGNOSTIC_UI_ASYNC_FILETYPES
                   for x in vimsupport.CurrentFiletypes() ] )
 
