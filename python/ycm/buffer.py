@@ -67,8 +67,10 @@ class Buffer( object ):
 
 
   def UpdateDiagnostics( self ):
-    if not self._async_diags:
-      self.UpdateWithNewDiagnostics( self._parse_request.Response() )
+    # FIXME: Don't do this for async only diags. This needs reinstating when the
+    # server knows how to sent the diagnostics all in one message.
+    # if not self._async_diags:
+    self.UpdateWithNewDiagnostics( self._parse_request.Response() )
 
 
   def UpdateWithNewDiagnostics( self, diagnostics ):
@@ -116,7 +118,7 @@ class BufferDict( dict ):
   def __missing__( self, key ):
     # Python does not allow to return assignment operation result directly
     new_value = self[ key ] = Buffer(
-      key, 
+      key,
       self._user_options,
       any( [ x in DIAGNOSTIC_UI_ASYNC_FILETYPES
              for x in
