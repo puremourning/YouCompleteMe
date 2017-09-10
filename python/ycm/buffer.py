@@ -24,6 +24,7 @@ from builtins import *  # noqa
 
 from ycm import vimsupport
 from ycm.client.event_notification import EventNotification
+from ycm.client.messages_request import MessagesPoll
 from ycm.diagnostic_interface import DiagnosticInterface
 
 
@@ -45,6 +46,8 @@ class Buffer( object ):
     self._parse_request = None
     self._async_diags = async_diags
     self._diag_interface = DiagnosticInterface( bufnr, user_options )
+    self._poll_request = MessagesPoll(
+      vimsupport.GetFilepathForBufferNumber( bufnr ) )
 
 
   def FileParseRequestReady( self, block = False ):
@@ -60,6 +63,21 @@ class Buffer( object ):
     # reparse on buffer visit and changed tick remains the same.
     self._handled_tick -= 1
     self._parse_tick = self._ChangedTick()
+
+
+  def PollForMessages( self ):
+    if not self._poll_request:
+      # We already tried and the server said that async messages are not
+      # supported for this buffer.
+      return False
+
+    if not self._poll_request.Poll( self._diag_interface ):
+      # The server informed us not to retry messages.
+      self._poll_request = None
+      return False
+
+    # We got some messages. Try again in a bit for more.
+    return True
 
 
   def NeedsReparse( self ):
