@@ -23,7 +23,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import iteritems
+from future.utils import iteritems, iterkeys
 import base64
 import json
 import logging
@@ -370,9 +370,20 @@ class YouCompleteMe( object ):
 
 
   def OnPeriodicTick( self ):
-    return any(
-      [ item[ 1 ].PollForMessages() for item in iteritems( self._buffers ) ]
-    )
+    # Poll the current buffer first. This makes diagnostics snappy for the
+    # current buffer and ParseRequest only for other buffers. This is a
+    # compromise of complexity. FIXME: Delivery of global diagnostics needs a
+    # rethink of how we do diagnostic interface. It's doable, but requires some
+    # code.
+
+    current_buffer = self._buffers[ vimsupport.GetCurrentBufferNumber() ]
+    poll_again = current_buffer.PollForMessages()
+
+    for buf_number in iterkeys( self._buffers ):
+      if self._buffers[ buf_number ].PollForMessages():
+        poll_again = True
+
+    return poll_again
 
 
   def OnFileReadyToParse( self ):
@@ -710,7 +721,7 @@ class YouCompleteMe( object ):
     if '*' in filetype_to_disable:
       return False
     else:
-      return not any([ x in filetype_to_disable for x in filetypes ])
+      return not any( [ x in filetype_to_disable for x in filetypes ] )
 
 
   def ShowDetailedDiagnostic( self ):
