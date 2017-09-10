@@ -771,7 +771,9 @@ def ReplaceChunksInBuffer( chunks, vim_buffer, locations ):
   chunk's start to the list |locations|"""
 
   # We need to track the difference in length, but ensuring we apply fixes
-  # in ascending order of insertion point.
+  # in ascending order of insertion point. Note that chunks with the same start
+  # point are applied in the sequence they appear in the list (python's sort is
+  # guaranteed to be stable).
   chunks.sort( key = lambda chunk: (
     chunk[ 'range' ][ 'start' ][ 'line_num' ],
     chunk[ 'range' ][ 'start' ][ 'column_num' ]

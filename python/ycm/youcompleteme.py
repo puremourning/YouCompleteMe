@@ -543,16 +543,16 @@ class YouCompleteMe( object ):
 
   def _OnCompleteDone_Java( self ):
     completions = self.GetCompletionsUserMayHaveCompleted()
-    fixits = [ self._GetFixItCompletion( c ) for c in completions ]
-    fixits = [ f for f in fixits if f ]
-    if not fixits:
+    fixit_completions = [ self._GetFixItCompletion( c ) for c in completions ]
+    fixit_completions = [ f for f in fixit_completions if f ]
+    if not fixit_completions:
       return
 
-    for f in fixits:
-      # Just apply them all. Technically, we might offer some sort of choice
-      # here
-      for g in f:
-        vimsupport.ReplaceChunks( g[ 'chunks' ], silent=True )
+    for fixit_completion in fixit_completions:
+      # FIXME: We just  apply them all. If there really are multiple, we might
+      # offer some sort of choice here, like in command_request.py.
+      for fixit in fixit_completion:
+        vimsupport.ReplaceChunks( fixit[ 'chunks' ], silent=True )
 
 
   def _GetFixItCompletion( self, completion ):
