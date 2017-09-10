@@ -80,21 +80,15 @@ function! s:ReceiveMessages( timer_id )
     return
   endif
 
-  " The effect of the following line is that we don't actually process any
-  " messages (of any type) unless we're actively in a YCM buffer (of any type).
-  " This feels wrong, and we might as well do it even if YCM isn't active in
-  " the current buffer
-  " 
-  "if !s:AllowedToCompleteInCurrentBuffer()
-  "  return
-  "endif
-
   let poll_again = s:Pyeval( 'ycm_state.OnPeriodicTick()' )
 
   if poll_again
     let s:pollers.receive_messages.id = timer_start(
           \ s:pollers.receive_messages.wait_milliseconds,
           \ function( 's:ReceiveMessages' ) )
+  else
+    " Don't poll again until we open another buffer
+    let s:pollers.receive_messages.id = -1
   endif
 endfunction
 
@@ -483,6 +477,12 @@ function! s:OnFileTypeSet()
   call s:SetUpCompleteopt()
   call s:SetCompleteFunc()
 
+  if s:pollers.receive_messages.id < 0
+    let s:pollers.receive_messages.id = timer_start(
+          \ s:pollers.receive_messages.wait_milliseconds,
+          \ function( 's:ReceiveMessages' ) )
+  endif
+
   exec s:python_command "ycm_state.OnBufferVisit()"
   call s:OnFileReadyToParse( 1 )
 endfunction
@@ -530,13 +530,6 @@ function! s:PollServerReady( timer_id )
   endif
 
   call s:OnFileTypeSet()
-
-  " Now that the server is ready, start polling it for asyncronous
-  " messages/diagnostics
-  let s:pollers.receive_messages.id = timer_start(
-        \ s:pollers.receive_messages.wait_milliseconds,
-        \ function( 's:ReceiveMessages' ) )
-
 endfunction
 
 

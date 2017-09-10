@@ -51,7 +51,6 @@ from ycm.client.debug_info_request import ( SendDebugInfoRequest,
 from ycm.client.omni_completion_request import OmniCompletionRequest
 from ycm.client.event_notification import SendEventNotificationAsync
 from ycm.client.shutdown_request import SendShutdownRequest
-from ycm.client.messages_request import MessagesPoll
 
 
 def PatchNoProxy():
@@ -118,7 +117,6 @@ class YouCompleteMe( object ):
     self._omnicomp = OmniCompleter( user_options )
     self._buffers = BufferDict( user_options )
     self._latest_completion_request = None
-    self._message_poll_request = None
     self._logger = logging.getLogger( 'ycm' )
     self._client_logfile = None
     self._server_stdout = None
@@ -138,7 +136,6 @@ class YouCompleteMe( object ):
 
   def _SetUpServer( self ):
     self._available_completers = {}
-    self._message_poll_request = None
     self._user_notified_about_crash = False
     self._filetypes_with_keywords_loaded = set()
     self._server_is_ready_with_cache = False
@@ -361,18 +358,10 @@ class YouCompleteMe( object ):
     return self.CurrentBuffer().NeedsReparse()
 
 
-  # TODO: Should this be handled by the Buffer abstraction
   def OnPeriodicTick( self ):
-    if not self._message_poll_request:
-      self._message_poll_request = MessagesPoll()
-
-    if not self.IsServerAlive() or not self.IsServerReady():
-        return None
-
-    # FIXME: the response needs to find the buffer object based on the URI.
-    # Repeat: CurrentBuffer() is incorrect here
-    return self._message_poll_request.Poll(
-      self.CurrentBuffer()._diag_interface )
+    return any(
+      [ item[ 1 ].PollForMessages() for item in iteritems( self._buffers ) ]
+    )
 
 
   def OnFileReadyToParse( self ):
