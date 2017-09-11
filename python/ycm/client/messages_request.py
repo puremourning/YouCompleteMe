@@ -37,9 +37,9 @@ TIMEOUT_SECONDS = 60
 
 
 class MessagesPoll( BaseRequest ):
-  def __init__( self, filepath = None ):
+  def __init__( self ):
     super( MessagesPoll, self ).__init__()
-    self._request_data = BuildRequestData( filepath )
+    self._request_data = BuildRequestData()
     self._response_future = None
 
 
@@ -51,7 +51,7 @@ class MessagesPoll( BaseRequest ):
     return
 
 
-  def Poll( self, diagnostic_interface ):
+  def Poll( self, diagnostics_handler ):
     """This should be called regularly to check for new messages in this buffer.
     Returns True if Poll should be called again in a while. Returns False when
     the completer or server indicated that further polling should not be done
@@ -79,7 +79,8 @@ class MessagesPoll( BaseRequest ):
                             warning = False,
                             truncate = True )
           elif 'diagnostics' in notification:
-            diagnostic_interface.UpdateWithNewDiagnostics(
+            diagnostics_handler.UpdateWithNewDiagnosticsForFile(
+              notification[ 'filepath' ],
               notification[ 'diagnostics' ] )
       elif not response:
         # Don't keep polling for this file
