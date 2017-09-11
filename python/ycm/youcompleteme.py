@@ -51,6 +51,7 @@ from ycm.client.debug_info_request import ( SendDebugInfoRequest,
 from ycm.client.omni_completion_request import OmniCompletionRequest
 from ycm.client.event_notification import SendEventNotificationAsync
 from ycm.client.shutdown_request import SendShutdownRequest
+from ycm.client.messages_request import MessagesPoll
 
 
 def PatchNoProxy():
@@ -139,6 +140,7 @@ class YouCompleteMe( object ):
     self._user_notified_about_crash = False
     self._filetypes_with_keywords_loaded = set()
     self._server_is_ready_with_cache = False
+    self._message_poll_request = None
 
     server_port = utils.GetUnusedLocalhostPort()
     # The temp options file is deleted by ycmd during startup
@@ -358,19 +360,25 @@ class YouCompleteMe( object ):
     return self.CurrentBuffer().NeedsReparse()
 
 
+  def UpdateWithNewDiagnosticsForFile( self, filepath, diagnostics ):
+    bufnr = vimsupport.GetBufferNumberForFilename( filepath )
+    if bufnr in self._buffers:
+      self._buffers[ bufnr ].UpdateWithNewDiagnostics( diagnostics )
+    else:
+      # TODO: Use the QuickFix list to report project errors ?
+      # TODO: Ues a sepecial buffer for project errors?
+      # TODO: Ignroe?
+      pass
+
+
   def OnPeriodicTick( self ):
-    # Poll the current buffer first. This makes diagnostics snappy for the
-    # current buffer and ParseRequest only for other buffers. This is a
-    # compromise of complexity. FIXME: Delivery of global diagnostics needs a
-    # rethink of how we do diagnostic interface. It's doable, but requires some
-    # code.
+    if not self._message_poll_request:
+      self._message_poll_request = MessagesPoll()
 
-    current_buffer = self._buffers[ vimsupport.GetCurrentBufferNumber() ]
-    poll_again = current_buffer.PollForMessages()
+    poll_again = self._message_poll_request.Poll( self )
 
-    for buf_number in iterkeys( self._buffers ):
-      if self._buffers[ buf_number ].PollForMessages():
-        poll_again = True
+    if not poll_again:
+      self._message_poll_request = None
 
     return poll_again
 
