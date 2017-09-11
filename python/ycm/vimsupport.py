@@ -729,7 +729,7 @@ def ReplaceChunks( chunks, silent=False ):
 
     if num_files_to_open > 0:
       if not Confirm(
-              FIXIT_OPENING_BUFFERS_MESSAGE_FORMAT.format( num_files_to_open ) ):
+            FIXIT_OPENING_BUFFERS_MESSAGE_FORMAT.format( num_files_to_open ) ):
         return
 
   # Store the list of locations where we applied changes. We use this to display
