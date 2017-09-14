@@ -71,6 +71,11 @@ class Buffer( object ):
     # server knows how to sent the diagnostics all in one message.
     if not self._async_diags:
       self.UpdateWithNewDiagnostics( self._parse_request.Response() )
+    else:
+      # We need to call the response method, because it might throw an exception
+      # or require extra config confirmation, even if we don't actually use the
+      # diagnostics.
+      self._parse_request.Response()
 
 
   def UpdateWithNewDiagnostics( self, diagnostics ):
