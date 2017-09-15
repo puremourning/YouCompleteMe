@@ -372,15 +372,25 @@ class YouCompleteMe( object ):
 
 
   def OnPeriodicTick( self ):
+    if not self.IsServerAlive():
+      # Server has died. We'll reset when the server is started again.
+      return False
+    elif not self.IsServerReady():
+      # Try again in a jiffy
+      return True
+
     if not self._message_poll_request:
       self._message_poll_request = MessagesPoll()
 
-    poll_again = self._message_poll_request.Poll( self )
-
-    if not poll_again:
+    if not self._message_poll_request.Poll( self ):
+      # Don't poll again until some event which might change the server's mind
+      # about whether to provide messages for the current buffer (e.g. buffer
+      # visit, file ready to parse, etc.)
       self._message_poll_request = None
+      return False
 
-    return poll_again
+    # Poll again in a jiffy
+    return True
 
 
   def OnFileReadyToParse( self ):
