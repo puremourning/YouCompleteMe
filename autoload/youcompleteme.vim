@@ -28,6 +28,9 @@ let s:default_completion = {
       \   'candidates': []
       \ }
 let s:completion = s:default_completion
+
+" Note when setting global state, consider if it needs to be reset when doing
+" s:RestartServer
 let s:previous_allowed_buffer_number = 0
 let s:pollers = {
       \   'completion': {
@@ -75,11 +78,16 @@ function! s:Pyeval( eval_string )
 endfunction
 
 
-function! s:ReceiveMessages( timer_id )
-  if !s:Pyeval( 'ycm_state.IsServerAlive()' )
-    return
+function! s:StartMessagePoll()
+  if s:pollers.receive_messages.id < 0
+    let s:pollers.receive_messages.id = timer_start(
+          \ s:pollers.receive_messages.wait_milliseconds,
+          \ function( 's:ReceiveMessages' ) )
   endif
+endfunction
 
+
+function! s:ReceiveMessages( timer_id )
   let poll_again = s:Pyeval( 'ycm_state.OnPeriodicTick()' )
 
   if poll_again
@@ -476,12 +484,7 @@ function! s:OnFileTypeSet()
 
   call s:SetUpCompleteopt()
   call s:SetCompleteFunc()
-
-  if s:pollers.receive_messages.id < 0
-    let s:pollers.receive_messages.id = timer_start(
-          \ s:pollers.receive_messages.wait_milliseconds,
-          \ function( 's:ReceiveMessages' ) )
-  endif
+  call s:StartMessagePoll()
 
   exec s:python_command "ycm_state.OnBufferVisit()"
   call s:OnFileReadyToParse( 1 )
@@ -495,6 +498,7 @@ function! s:OnBufferEnter()
 
   call s:SetUpCompleteopt()
   call s:SetCompleteFunc()
+  call s:StartMessagePoll()
 
   exec s:python_command "ycm_state.OnBufferVisit()"
   " Last parse may be outdated because of changes from other buffers. Force a
@@ -827,8 +831,13 @@ endfunction
 
 function! s:RestartServer()
   exec s:python_command "ycm_state.RestartServer()"
-  call timer_stop( s:pollers.server_ready.id )
+
+  let s:previous_allowed_buffer_number = 0
+
   call timer_stop( s:pollers.receive_messages.id )
+  let s:pollers.receive_messages.id = -1
+
+  call timer_stop( s:pollers.server_ready.id )
   let s:pollers.server_ready.id = timer_start(
         \ s:pollers.server_ready.wait_milliseconds,
         \ function( 's:PollServerReady' ) )
