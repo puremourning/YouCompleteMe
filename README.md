@@ -24,6 +24,7 @@ YouCompleteMe: a code-completion engine for Vim
     - [JavaScript Semantic Completion](#javascript-semantic-completion)
     - [Rust Semantic Completion](#rust-semantic-completion)
     - [Python Semantic Completion](#python-semantic-completion)
+    - [Java Semantic Completion](#java-semantic-completion)
     - [Semantic Completion for Other Languages](#semantic-completion-for-other-languages)
     - [Writing New Semantic Completers](#writing-new-semantic-completers)
     - [Diagnostic Display](#diagnostic-display)
@@ -58,6 +59,7 @@ YouCompleteMe is a fast, as-you-type, fuzzy-search code completion engine for
 - a [TSServer][]-based completion engine for TypeScript,
 - a [Tern][]-based completion engine for JavaScript,
 - a [racer][]-based completion engine for Rust,
+- a [jdt.ls][]-based experimental completion engine for Java.
 - and an omnifunc-based completer that uses data from Vim's omnicomplete system
   to provide semantic completions for many other languages (Ruby, PHP etc.).
 
@@ -191,6 +193,8 @@ The following additional language support options are available:
   `--tern-completer` when calling `./install.py`.
 - Rust support: install [Rust][rust-install] and add
   `--racer-completer` when calling `./install.py`.
+- Java support: install [JDK8 (version 8 required)][jdk-install] and add
+  `--jdt-completer` when calling `./install.py`.
 
 To simply compile with everything enabled, there's a `--all` flag.  So, to
 install with all language features, ensure `xbuild`, `go`, `tsserver`, `node`,
@@ -204,6 +208,11 @@ That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). The underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-project], 
+[maven projects][mvn-project] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -258,6 +267,8 @@ The following additional language support options are available:
   `--tern-completer` when calling `./install.py`.
 - Rust support: install [Rust][rust-install] and add `--racer-completer` when
   calling `./install.py`.
+- Java support: install [JDK8 (version 8 required)][jdk-install] and add 
+  `--jdt-completer` when calling `./install.py`.
 
 To simply compile with everything enabled, there's a `--all` flag.  So, to
 install with all language features, ensure `xbuild`, `go`, `tsserver`, `node`,
@@ -271,6 +282,11 @@ That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). Underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-projects], 
+[maven projects][mvn-projects] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -325,6 +341,8 @@ The following additional language support options are available:
   `--tern-completer` when calling `./install.py`.
 - Rust support: install [Rust][rust-install] and add `--racer-completer` when
   calling `./install.py`.
+- Java support: install [JDK8 (version 8 required)][jdk-install] and add 
+  `--jdt-completer` when calling `./install.py`.
 
 To simply compile with everything enabled, there's a `--all` flag.  So, to
 install with all language features, ensure `xbuild`, `go`, `tsserver`, `node`,
@@ -338,6 +356,11 @@ That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). Underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-projects], 
+[maven projects][mvn-projects] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -410,6 +433,8 @@ The following additional language support options are available:
   `--tern-completer` when calling `install.py`.
 - Rust support: install [Rust][rust-install] and add `--racer-completer` when
   calling `install.py`.
+- Java support: install [JDK8 (version 8 required)][jdk-install] and add 
+  `--jdt-completer` when calling `./install.py`.
 
 To simply compile with everything enabled, there's a `--all` flag.  So, to
 install with all language features, ensure `msbuild`, `go`, `tsserver`, `node`,
@@ -426,6 +451,11 @@ That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). Underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-projects], 
+[maven projects][mvn-projects] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -481,6 +511,8 @@ The following additional language support options are available:
   `--tern-completer` when calling `./install.py`.
 - Rust support: install [Rust][rust-install] and add `--racer-completer` when
   calling `./install.py`.
+- Java support: install [JDK8 (version 8 required)][jdk-install] and add 
+  `--jdt-completer` when calling `./install.py`.
 
 To simply compile with everything enabled, there's a `--all` flag.  So, to
 install with all language features, ensure `xbuild`, `go`, `tsserver`, `node`,
@@ -493,6 +525,11 @@ That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). Underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-projects], 
+[maven projects][mvn-projects] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -686,10 +723,19 @@ process.
       `YouCompleteMe/third_party/ycmd/third_party/racerd` and run `cargo build
       --release`.
 
+    - Java support: install [JDK8 (version 8 required)][jdk-install]. Navigate to
+      `YouCompleteMe/third_party/ycmd/third_part/eclipse.jdt.ls` and run `./mvnw
+      clean package`.`
+
 That's it. You're done. Refer to the _User Guide_ section on how to use YCM.
 Don't forget that if you want the C-family semantic completion engine to work,
 you will need to provide the compilation flags for your project to YCM. It's all
 in the User Guide.
+
+Just like C-family semantic completion requires compilation flags, Java requires
+some sort of project describing file(s). Underlying engine (jdt.ls) currently 
+supports [eclipse style projects][eclipse-projects], 
+[maven projects][mvn-projects] and [gradle projects][gradle-project].
 
 YCM comes with sane defaults for its options, but you still may want to take a
 look at what's available for configuration. There are a few interesting options
@@ -763,6 +809,20 @@ Quick Feature Summary
   identical)
 * Management of `racer` server instance
 * View documentation comments for identifiers (`GetDoc`)
+
+### Java
+
+* Semantic auto-completion
+* Go to definition (`GoTo`, `GoToDefinition`, and `GoToDeclaration` are
+  identical)
+* Reference finding (`GoToReferences`)
+* Real-time diagnostic display
+* Renaming symbols (`RefactorRename <new name>`)
+* View documentation comments for identifiers (`GetDoc`)
+* Type information for identifiers (`GetType`)
+* Automatically fix certain errors (`FixIt`)
+* Detection of java projects
+* Management of `jdt.ls` server instance
 
 User Guide
 ----------
@@ -1092,6 +1152,34 @@ in that directory, the first `python` that YCM will find will be the one in the
 virtual environment, so [jedi][] will be able to provide completions for every
 package you have in the virtual environment.
 
+### Java Semantic Completion
+
+In order to provide semantic analysis, the Java completion engine requires
+knowledge of your project structure, and in particular the class path to use,
+when compiling your code. Fortunately [jdt.ls][]
+supports [eclipse style projects][eclipse-project],
+[maven projects][mvn-project] and [gradle projects][gradle-project].
+
+**NOTE:** Our recommendation is to use either maven or gradle as both have much
+better documentation than eclipse.
+
+#### Eclipse Projects
+
+Eclipse style projects requires two files: [.project][eclipse-dot-project] and
+[.classpath][eclipse-dot-classpath].
+
+[A simple eclipse style project example][ycmd-eclipse-project] can be found in
+the ycmd test dir.
+
+#### Maven Projects
+
+Maven needs a file named [pom.xml][mvn-project] in the root of the project.
+Once again a simple [pom.xml][ycmd-mvn-pom-xml] can be found in ycmd source.
+
+#### Gradle Projecs
+
+Just take a look at [the ycmd gradle test project][ycmd-gradle-project]...
+
 ### Semantic Completion for Other Languages
 
 C-family, C#, Go, JavaScript, Python, Rust, and TypeScript languages are
@@ -1326,7 +1414,7 @@ Supported in filetypes: `c, cpp, objc, objcpp`
 
 Looks up the symbol under the cursor and jumps to its declaration.
 
-Supported in filetypes: `c, cpp, objc, objcpp, cs, go, python, rust`
+Supported in filetypes: `c, cpp, objc, objcpp, cs, go, python, rust, java`
 
 #### The `GoToDefinition` subcommand
 
@@ -1338,7 +1426,7 @@ translation unit consists of the file you are editing and all the files you are
 including with `#include` directives (directly or indirectly) in that file.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs, go, javascript, python,
-rust, typescript`
+rust, typescript, java`
 
 #### The `GoTo` subcommand
 
@@ -1349,7 +1437,8 @@ the current translation unit, jumps to the symbol's declaration. For
 C/C++/Objective-C, it first tries to look up the current line for a header and
 jump to it. For C#, implementations are also considered and preferred.
 
-Supported in filetypes: `c, cpp, objc, objcpp, cs, go, javascript, python, rust`
+Supported in filetypes: `c, cpp, objc, objcpp, cs, go, javascript, python, rust,
+java`
 
 #### The `GoToImprecise` subcommand
 
@@ -1370,7 +1459,7 @@ This command attempts to find all of the references within the project to the
 identifier under the cursor and populates the quickfix list with those
 locations.
 
-Supported in filetypes: `javascript, python, typescript`
+Supported in filetypes: `javascript, python, typescript, java`
 
 #### The `GoToImplementation` subcommand
 
@@ -1378,7 +1467,7 @@ Looks up the symbol under the cursor and jumps to its implementation (i.e.
 non-interface). If there are multiple implementations, instead provides a list
 of implementations to choose from.
 
-Supported in filetypes: `cs`
+Supported in filetypes: `cs, java`
 
 #### The `GoToImplementationElseDeclaration` subcommand
 
@@ -1422,7 +1511,7 @@ std::cout << *x; // invoking on x returns "const char ** => const char **"
 
 **NOTE:** Causes re-parsing of the current translation unit.
 
-Supported in filetypes: `c, cpp, objc, objcpp, javascript, typescript`
+Supported in filetypes: `c, cpp, objc, objcpp, javascript, typescript, java`
 
 #### The `GetTypeImprecise` subcommand
 
@@ -1479,7 +1568,7 @@ under the cursor. Depending on the file type, this includes things like:
 * etc.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs, python, typescript,
-javascript, rust`
+javascript, rust, java`
 
 #### The `GetDocImprecise` subcommand
 
@@ -1536,7 +1625,7 @@ the diagnostics UI.  This is particularly useful where there are multiple
 diagnostics on one line, or where after fixing one diagnostic, another fix-it is
 available.
 
-Supported in filetypes: `c, cpp, objc, objcpp, cs`
+Supported in filetypes: `c, cpp, objc, objcpp, cs, java`
 
 #### The `RefactorRename <new name>` subcommand
 
@@ -1550,7 +1639,7 @@ files. Rename operations may involve changes to multiple files, which may or may
 not be open in Vim buffers at the time. YouCompleteMe handles all of this for
 you. The behavior is described in [the following section](#multi-file-refactor).
 
-Supported in filetypes: `javascript` (variables only), `typescript`
+Supported in filetypes: `javascript` (variables only), `typescript, java`
 
 #### Multi-file Refactor
 
@@ -1600,7 +1689,7 @@ python binary to use to restart the Python semantic engine.
 :YcmCompleter RestartServer /usr/bin/python3.4
 ```
 
-Supported in filetypes: `cs, go, javascript, python, rust, typescript`
+Supported in filetypes: `cs, go, javascript, python, rust, typescript, java`
 
 #### The `ClearCompilationFlagCache` subcommand
 
@@ -3155,3 +3244,13 @@ This software is licensed under the [GPL v3 license][gpl].
 [ninja-compdb]: https://ninja-build.org/manual.html
 [vim-nerdtree-tabs]: https://github.com/jistr/vim-nerdtree-tabs
 [++enc]: http://vimdoc.sourceforge.net/htmldoc/editing.html#++enc
+[jdt.ls]: https://github.com/eclipse/eclipse.jdt.ls
+[jdk-install]: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+[mvn-project]: https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html
+[eclipse-project]: 
+[gradle-projec]: https://docs.gradle.org/current/userguide/tutorial_java_projects.html
+[eclipse-dot-project]: https://help.eclipse.org/oxygen/index.jsp?topic=%2Forg.eclipse.platform.doc.isv%2Freference%2Fmisc%2Fproject_description_file.html
+[eclipse-dot-classpath]: https://help.eclipse.org/mars/index.jsp?topic=%2Forg.eclipse.jdt.doc.isv%2Freference%2Fapi%2Forg%2Feclipse%2Fjdt%2Fcore%2FIClasspathEntry.html
+[ycmd-eclipse-project]: https://github.com/Valloric/ycmd/tree/master/ycmd/tests/java/testdata/simple_eclipse_project
+[ycmd-mvn-pom-xml]: https://github.com/Valloric/ycmd/blob/java-language-server/ycmd/tests/java/testdata/simple_maven_project/pom.xml
+[ycmd-gradle-project]: https://github.com/Valloric/ycmd/tree/master/ycmd/tests/java/testdata/simple_gradle_project
