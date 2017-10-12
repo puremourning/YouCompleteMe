@@ -52,6 +52,26 @@ let s:pollers = {
       \ }
 
 
+function! s:SuspendTimers()
+  for poller in keys( s:pollers )
+    let info = timer_info( s:pollers[ poller ].id )
+    if len( info ) == 1 && !info[ 0 ].paused
+      call timer_pause( s:pollers[ poller ].id, 1 )
+    endif
+  endfor
+
+endfunction
+
+function! s:ResumeTimers()
+  for poller in keys( s:pollers )
+    let info = timer_info( s:pollers[ poller ].id )
+    if len( info ) == 1 && info[ 0 ].paused
+      call timer_pause( s:pollers[ poller ].id, 0 )
+    endif
+  endfor
+endfunction
+
+
 " When both versions are available, we prefer Python 3 over Python 2:
 "  - faster startup (no monkey-patching from python-future);
 "  - better Windows support (e.g. temporary paths are not returned in all
@@ -864,6 +884,11 @@ endfunction
 
 
 function! s:CompleterCommand(...)
+  " Work around bugs in Vim where the command line is cleared when timers are
+  " running. This is particularly a problem for FixIt which can offer the user
+  " options
+  call s:SuspendTimers()
+
   " CompleterCommand will call the OnUserCommand function of a completer.
   " If the first arguments is of the form "ft=..." it can be used to specify the
   " completer to use (for example "ft=cpp").  Else the native filetype completer
@@ -883,6 +908,8 @@ function! s:CompleterCommand(...)
 
   exec s:python_command "ycm_state.SendCommandRequest(" .
         \ "vim.eval( 'l:arguments' ), vim.eval( 'l:completer' ) )"
+
+  call s:ResumeTimers()
 endfunction
 
 
