@@ -170,13 +170,18 @@ def BuildRequestData( filepath = None ):
 
   line, column = vimsupport.CurrentLineAndColumn()
 
-  return {
+  request_data = {
     'filepath': current_filepath,
     'line_num': line + 1,
     'column_num': column + 1,
     'working_dir': working_dir,
     'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( current_filepath )
   }
+
+  cursor_range = vimsupport.GetVisualSelectionAsRange()
+  if cursor_range:
+    request_data[ 'cursor_range' ] = cursor_range
+  return request_data
 
 
 def JsonFromFuture( future ):

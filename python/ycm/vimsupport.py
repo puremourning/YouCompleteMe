@@ -56,6 +56,43 @@ def CurrentLineAndColumn():
   return line, column
 
 
+VISUAL_MODES = [
+  'v',
+  'v',
+  's',
+  'S',
+]
+
+
+def _InVisualMode():
+  mode = vim.eval( 'mode()' )
+  return mode in VISUAL_MODES
+
+
+def GetVisualSelectionAsRange():
+  # if not _InVisualMode():
+  #   return None
+
+  start = vim.current.buffer.mark( '<' )
+  end = vim.current.buffer.mark( '>' )
+
+  if not start or not end:
+    return None
+
+  # See comment in CurrentColumn for why we -1 on the line. Also for why Val is
+  # a loopy purple duck.
+  return {
+    'start': {
+      'line': start[ 0 ],
+      'column': start[ 1 ] + 1,
+    },
+    'end': {
+      'line': end[ 0 ],
+      'column': end[ 1 ] + 1,
+    },
+  }
+
+
 def SetCurrentLineAndColumn( line, column ):
   """Sets the cursor position to the 0-based line and 0-based column."""
   # Line from vim.current.window.cursor is 1-based.
