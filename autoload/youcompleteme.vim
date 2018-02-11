@@ -915,8 +915,10 @@ endfunction
 function! s:SetUpCommands()
   command! YcmRestartServer call s:RestartServer()
   command! YcmDebugInfo call s:DebugInfo()
-  command! -nargs=* -complete=custom,youcompleteme#LogsComplete
-        \ YcmToggleLogs call s:ToggleLogs(<f-args>)
+  command! -nargs=* -complete=custom,youcompleteme#LogsComplete -range=0
+        \ YcmToggleLogs call s:ToggleLogs( <f-count>,
+                                         \ <f-mods>,
+                                         \ <f-args>)
   if s:Pyeval( 'vimsupport.VimVersionAtLeast( "7.4.1898" )' )
     command! -nargs=* -complete=custom,youcompleteme#SubCommandsComplete -range
           \ YcmCompleter call s:CompleterCommand(<q-mods>,
@@ -962,8 +964,10 @@ function! s:DebugInfo()
 endfunction
 
 
-function! s:ToggleLogs(...)
-  exec s:python_command "ycm_state.ToggleLogs( *vim.eval( 'a:000' ) )"
+function! s:ToggleLogs( count, ... )
+  exec s:python_command "ycm_state.ToggleLogs( " .
+        \ "vimsupport.GetIntValue( 'a:count' )," .
+        \ "*vim.eval( 'a:000' ) )"
 endfunction
 
 
