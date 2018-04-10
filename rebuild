@@ -3,4 +3,4 @@
 env EXTRA_CMAKE_ARGS="-DPATH_TO_LLVM_ROOT=/eems/eems/dev/clang/linux/rh-6/stable" \
     ./install.py --clang-completer --system-libclang --go-completer --quiet --java-completer
 cd ./third_party/ycmd/third_party/tern_runtime
-~benj/bin/proxycmd npm install --production
+npm install --production
