@@ -42,11 +42,12 @@ PYTHON_BINARY_REGEX = re.compile(
 def PathToPythonInterpreter():
   # Not calling the Python interpreter to check its version as it significantly
   # impacts startup time.
-  from ycmd import utils
+  from ycm.protoycmd import ( FindExecutable, GetExecutable, OnWindows,
+                          PathToFirstExistingExecutable )
 
   python_interpreter = vim.eval( 'g:ycm_server_python_interpreter' )
   if python_interpreter:
-    python_interpreter = utils.FindExecutable( python_interpreter )
+    python_interpreter = FindExecutable( python_interpreter )
     if python_interpreter:
       return python_interpreter
 
@@ -54,14 +55,14 @@ def PathToPythonInterpreter():
                         "does not point to a valid Python 2.7 or 3.4+." )
 
   python_interpreter = _PathToPythonUsedDuringBuild()
-  if python_interpreter and utils.GetExecutable( python_interpreter ):
+  if python_interpreter and GetExecutable( python_interpreter ):
     return python_interpreter
 
   # On UNIX platforms, we use sys.executable as the Python interpreter path.
   # We cannot use sys.executable on Windows because for unknown reasons, it
   # returns the Vim executable. Instead, we use sys.exec_prefix to deduce the
   # interpreter path.
-  python_interpreter = ( WIN_PYTHON_PATH if utils.OnWindows() else
+  python_interpreter = ( WIN_PYTHON_PATH if OnWindows() else
                          sys.executable )
   if _EndsWithPython( python_interpreter ):
     return python_interpreter
@@ -71,9 +72,9 @@ def PathToPythonInterpreter():
   # there; few people wrote theirs to work on py3.
   # So we check 'python2' before 'python' because on some distributions (Arch
   # Linux for example), python refers to python3.
-  python_interpreter = utils.PathToFirstExistingExecutable( [ 'python2',
-                                                              'python',
-                                                              'python3' ] )
+  python_interpreter = PathToFirstExistingExecutable( [ 'python2',
+                                                        'python',
+                                                        'python3' ] )
   if python_interpreter:
     return python_interpreter
 
@@ -83,11 +84,11 @@ def PathToPythonInterpreter():
 
 
 def _PathToPythonUsedDuringBuild():
-  from ycmd import utils
+  from ycm.protoycmd import ReadFile
 
   try:
     filepath = os.path.join( DIR_OF_YCMD, 'PYTHON_USED_DURING_BUILDING' )
-    return utils.ReadFile( filepath ).strip()
+    return ReadFile( filepath ).strip()
   # We need to check for IOError for Python2 and OSError for Python3
   except ( IOError, OSError ):
     return None

@@ -35,8 +35,21 @@ from ycm import base, paths, vimsupport
 from ycm.buffer import ( BufferDict,
                          DIAGNOSTIC_UI_FILETYPES,
                          DIAGNOSTIC_UI_ASYNC_FILETYPES )
-from ycmd import server_utils, user_options_store, utils
-from ycmd.request_wrap import RequestWrap
+from ycm.protoycmd import ( CORE_UNEXPECTED_STATUS,
+                        CORE_MISSING_STATUS,
+                        CORE_PYTHON2_STATUS,
+                        CORE_PYTHON3_STATUS,
+                        CORE_OUTDATED_STATUS,
+                        SetAll,
+                        GetAll,
+                        ToUnicode,
+                        GetUnusedLocalhostPort,
+                        CreateLogfile,
+                        SafePopen,
+                        OnWindows,
+                        RemoveIfExists,
+                        RequestWrap,
+                        GetCurrentDirectory )
 from ycm.omni_completer import OmniCompleter
 from ycm import syntax_parse
 from ycm.client.ycmd_keepalive import YcmdKeepalive
@@ -134,8 +147,8 @@ class YouCompleteMe( object ):
     self._message_poll_request = None
 
     base.LoadJsonDefaultsIntoVim()
-    user_options_store.SetAll( base.BuildServerConf() )
-    self._user_options = user_options_store.GetAll()
+    SetAll( base.BuildServerConf() )
+    self._user_options = GetAll()
     self._omnicomp = OmniCompleter( self._user_options )
     self._buffers = BufferDict( self._user_options )
 
@@ -143,7 +156,7 @@ class YouCompleteMe( object ):
 
     hmac_secret = os.urandom( HMAC_SECRET_LENGTH )
     options_dict = dict( self._user_options )
-    options_dict[ 'hmac_secret' ] = utils.ToUnicode(
+    options_dict[ 'hmac_secret' ] = ToUnicode(
       base64.b64encode( hmac_secret ) )
     options_dict[ 'server_keep_logfiles' ] = self._user_options[
       'keep_logfiles' ]
@@ -152,7 +165,7 @@ class YouCompleteMe( object ):
     with NamedTemporaryFile( delete = False, mode = 'w+' ) as options_file:
       json.dump( options_dict, options_file )
 
-    server_port = utils.GetUnusedLocalhostPort()
+    server_port = GetUnusedLocalhostPort()
 
     BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
     BaseRequest.hmac_secret = hmac_secret
@@ -176,9 +189,9 @@ class YouCompleteMe( object ):
              '--idle_suicide_seconds={0}'.format(
                 SERVER_IDLE_SUICIDE_SECONDS ) ]
 
-    self._server_stdout = utils.CreateLogfile(
+    self._server_stdout = CreateLogfile(
         SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stdout' ) )
-    self._server_stderr = utils.CreateLogfile(
+    self._server_stderr = CreateLogfile(
         SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stderr' ) )
     args.append( '--stdout={0}'.format( self._server_stdout ) )
     args.append( '--stderr={0}'.format( self._server_stderr ) )
@@ -186,13 +199,13 @@ class YouCompleteMe( object ):
     if self._user_options[ 'keep_logfiles' ]:
       args.append( '--keep_logfiles' )
 
-    self._server_popen = utils.SafePopen( args, stdin_windows = PIPE,
+    self._server_popen = SafePopen( args, stdin_windows = PIPE,
                                           stdout = PIPE, stderr = PIPE )
 
 
   def _SetUpLogging( self ):
     def FreeFileFromOtherProcesses( file_object ):
-      if utils.OnWindows():
+      if OnWindows():
         from ctypes import windll
         import msvcrt
 
@@ -201,7 +214,7 @@ class YouCompleteMe( object ):
                                               HANDLE_FLAG_INHERIT,
                                               0 )
 
-    self._client_logfile = utils.CreateLogfile( CLIENT_LOGFILE_FORMAT )
+    self._client_logfile = CreateLogfile( CLIENT_LOGFILE_FORMAT )
 
     handler = logging.FileHandler( self._client_logfile )
 
@@ -254,16 +267,16 @@ class YouCompleteMe( object ):
 
     return_code = self._server_popen.poll()
     logfile = os.path.basename( self._server_stderr )
-    if return_code == server_utils.CORE_UNEXPECTED_STATUS:
+    if return_code == CORE_UNEXPECTED_STATUS:
       error_message = CORE_UNEXPECTED_MESSAGE.format(
           logfile = logfile )
-    elif return_code == server_utils.CORE_MISSING_STATUS:
+    elif return_code == CORE_MISSING_STATUS:
       error_message = CORE_MISSING_MESSAGE
-    elif return_code == server_utils.CORE_PYTHON2_STATUS:
+    elif return_code == CORE_PYTHON2_STATUS:
       error_message = CORE_PYTHON2_MESSAGE
-    elif return_code == server_utils.CORE_PYTHON3_STATUS:
+    elif return_code == CORE_PYTHON3_STATUS:
       error_message = CORE_PYTHON3_MESSAGE
-    elif return_code == server_utils.CORE_OUTDATED_STATUS:
+    elif return_code == CORE_OUTDATED_STATUS:
       error_message = CORE_OUTDATED_MESSAGE
     else:
       error_message = EXIT_CODE_UNEXPECTED_MESSAGE.format(
@@ -480,7 +493,7 @@ class YouCompleteMe( object ):
     logging.shutdown()
     if not self._user_options[ 'keep_logfiles' ]:
       if self._client_logfile:
-        utils.RemoveIfExists( self._client_logfile )
+        RemoveIfExists( self._client_logfile )
 
 
   def OnVimLeave( self ):
@@ -709,7 +722,7 @@ class YouCompleteMe( object ):
   def _AddTagsFilesIfNeeded( self, extra_data ):
     def GetTagFiles():
       tag_files = vim.eval( 'tagfiles()' )
-      return [ os.path.join( utils.GetCurrentDirectory(), tag_file )
+      return [ os.path.join( GetCurrentDirectory(), tag_file )
                for tag_file in tag_files ]
 
     if not self._user_options[ 'collect_identifiers_from_tags_files' ]:

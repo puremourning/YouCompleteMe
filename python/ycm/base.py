@@ -24,8 +24,9 @@ from builtins import *  # noqa
 
 from future.utils import iteritems
 from ycm import vimsupport
-from ycmd import user_options_store
-from ycmd import identifier_utils
+from ycm.protoycmd import ( DefaultOptions,
+                        IdentifierRegexForFiletype,
+                        StartOfLongestIdentifierEndingAtIndex )
 
 YCM_VAR_PREFIX = 'ycm_'
 
@@ -49,7 +50,7 @@ def BuildServerConf():
 
 
 def LoadJsonDefaultsIntoVim():
-  defaults = user_options_store.DefaultOptions()
+  defaults = DefaultOptions()
   for key, value in iteritems( defaults ):
     new_key = 'g:ycm_' + key
     if not vimsupport.VariableExists( new_key ):
@@ -62,7 +63,7 @@ def CurrentIdentifierFinished():
   if previous_char_index < 0:
     return True
   filetype = vimsupport.CurrentFiletypes()[ 0 ]
-  regex = identifier_utils.IdentifierRegexForFiletype( filetype )
+  regex = IdentifierRegexForFiletype( filetype )
 
   for match in regex.finditer( line ):
     if match.end() == previous_char_index:
@@ -78,7 +79,7 @@ def LastEnteredCharIsIdentifierChar():
     return False
   filetype = vimsupport.CurrentFiletypes()[ 0 ]
   return (
-    identifier_utils.StartOfLongestIdentifierEndingAtIndex(
+    StartOfLongestIdentifierEndingAtIndex(
         line, current_column, filetype ) != current_column )
 
 

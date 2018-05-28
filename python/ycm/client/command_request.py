@@ -24,7 +24,7 @@ from builtins import *  # noqa
 
 from ycm.client.base_request import BaseRequest, BuildRequestData
 from ycm import vimsupport
-from ycmd.utils import ToUnicode
+from ycm.protoycmd import ToUnicode
 
 
 def _EnsureBackwardsCompatibility( arguments ):

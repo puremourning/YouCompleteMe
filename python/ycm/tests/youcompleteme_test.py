@@ -38,7 +38,7 @@ from ycm.tests import ( StopServer, test_utils, UserOptions, WaitUntilReady,
                         YouCompleteMeInstance )
 from ycm.client.base_request import _LoadExtraConfFile
 from ycm.youcompleteme import YouCompleteMe
-from ycmd.responses import ServerError
+from ycm.protoycmd import ServerError
 from ycm.tests.mock_utils import ( MockAsyncServerResponseDone,
                                    MockAsyncServerResponseInProgress,
                                    MockAsyncServerResponseException )
