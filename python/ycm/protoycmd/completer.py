@@ -21,7 +21,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import * # noqa
 
-from future import with_metaclass
+from future.utils import with_metaclass
 from ycm.protoycmd import completer_utils
 from ycm.protoycmd.responses import NoDiagnosticSupport
 import abc

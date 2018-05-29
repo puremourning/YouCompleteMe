@@ -31,7 +31,7 @@ import socket
 import sys
 import threading
 import time
-from future import PY2
+from future.utils import PY2
 
 EXECUTABLE_FILE_MASK = os.F_OK | os.X_OK
 

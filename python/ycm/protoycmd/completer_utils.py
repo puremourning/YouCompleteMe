@@ -22,7 +22,7 @@ from __future__ import absolute_import
 from builtins import * # noqa
 
 from collections import defaultdict
-from future import iteritems
+from future.utils import iteritems
 from utils import re, ToUnicode
 
 
