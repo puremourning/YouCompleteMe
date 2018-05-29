@@ -24,9 +24,23 @@ from builtins import * # noqa
 import json
 import os
 from frozendict import frozendict
+
 from ycm.protoycmd.utils import ReadFile
 
 _USER_OPTIONS = {}
+
+
+def SetAll( new_options ):
+  global _USER_OPTIONS
+  _USER_OPTIONS = frozendict( new_options )
+
+
+def GetAll():
+  return _USER_OPTIONS
+
+
+def Value( key ):
+  return _USER_OPTIONS[ key ]
 
 
 def DefaultOptions():
@@ -42,16 +56,3 @@ def DefaultOptions():
   options = json.loads( ReadFile( settings_path ) )
   options.pop( 'hmac_secret', None )
   return options
-
-
-def Value( key ):
-  return _USER_OPTIONS[ key ]
-
-
-def GetAll():
-  return _USER_OPTIONS
-
-
-def SetAll( new_options  ):
-  global _USER_OPTIONS
-  _USER_OPTIONS = frozendict( new_options )
