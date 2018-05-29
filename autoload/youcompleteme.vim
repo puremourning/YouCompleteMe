@@ -194,15 +194,11 @@ import vim
 # Add python sources folder to the system path.
 script_folder = vim.eval( 's:script_folder_path' )
 sys.path.insert( 0, os.path.join( script_folder, '..', 'python' ) )
-sys.path.insert( 0, os.path.join( script_folder, '..', 'third_party', 'ycmd' ) )
 
 # We enclose this code in a try/except block to avoid backtraces in Vim.
 try:
-  from ycmd import server_utils as su
+  from ycm.protoycmd import server_utils as su
   su.AddNearestThirdPartyFoldersToSysPath( script_folder )
-  # We need to import ycmd's third_party folders as well since we import and
-  # use ycmd code in the client.
-  su.AddNearestThirdPartyFoldersToSysPath( su.__file__ )
 
   # Import the modules used in this file.
   from ycm import base, vimsupport, youcompleteme

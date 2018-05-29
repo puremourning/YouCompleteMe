@@ -45,14 +45,7 @@ def Value( key ):
 
 def DefaultOptions():
   settings_path = os.path.join(
-      os.path.dirname( os.path.abspath( __file__ ) ),
-                       '..',
-                       '..',
-                       '..',
-                       'third_party',
-                       'ycmd',
-                       'ycmd',
-                       'default_settings.json' )
+      os.path.dirname( os.path.abspath( __file__ ) ), 'default_settings.json' )
   options = json.loads( ReadFile( settings_path ) )
   options.pop( 'hmac_secret', None )
   return options
