@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 # Copyright (C) 2018 ycmd contributors
 #
 # This file is part of YouCompleteMe.#
