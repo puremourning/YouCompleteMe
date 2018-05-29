@@ -24,7 +24,7 @@ from builtins import *  # noqa
 
 import logging
 from future.utils import iteritems
-from ycm.protoycmd import ToUnicode
+from ycm.protoycmd.utils import ToUnicode
 from ycm.client.base_request import ( BaseRequest, DisplayServerException,
                                       MakeServerException )
 from ycm import vimsupport

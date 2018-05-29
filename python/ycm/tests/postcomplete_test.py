@@ -32,7 +32,7 @@ from mock import MagicMock, DEFAULT, patch
 from nose.tools import eq_, ok_
 
 from ycm import vimsupport
-from ycm.protoycmd import ToBytes
+from ycm.protoycmd.utils import ToBytes
 from ycm.client.completion_request import ( CompletionRequest,
                                             _FilterToMatchingCompletions,
                                             _GetRequiredNamespaceImport )

@@ -28,8 +28,12 @@ import os
 import json
 import re
 from collections import defaultdict, namedtuple
-from ycm.protoycmd import ( ByteOffsetToCodepointOffset, GetCurrentDirectory,
-                        JoinLinesAsUnicode, ToBytes, ToUnicode, Value )
+from ycm.protoycmd.utils import ( ByteOffsetToCodepointOffset,
+                                  GetCurrentDirectory,
+                                  JoinLinesAsUnicode,
+                                  ToBytes,
+                                  ToUnicode )
+from ycm import user_options_store
 
 BUFFER_COMMAND_MAP = { 'same-buffer'      : 'edit',
                        'horizontal-split' : 'split',
@@ -492,7 +496,7 @@ def JumpToLocation( filename, line, column ):
     # location, not to the start of the newly opened file.
     # Sadly this fails on random occasions and the undesired jump remains in the
     # jumplist.
-    user_command = Value( 'goto_buffer_command' )
+    user_command = user_options_store.Value( 'goto_buffer_command' )
 
     if user_command == 'new-or-existing-tab':
       if TryJumpLocationInOpenedTab( filename, line, column ):

@@ -24,7 +24,8 @@ from builtins import *  # noqa
 
 import vim
 from ycm import vimsupport
-from ycm.protoycmd import ToUnicode, Completer
+from ycm.protoycmd import utils
+from ycm.protoycmd.completer import Completer
 from ycm.client.base_request import BaseRequest
 
 OMNIFUNC_RETURNED_BAD_VALUE = 'Omnifunc returned bad value to YCM!'
@@ -47,7 +48,7 @@ class OmniCompleter( Completer ):
 
 
   def ShouldUseNow( self, request_data ):
-    self._omnifunc = ToUnicode( vim.eval( '&omnifunc' ) )
+    self._omnifunc = utils.ToUnicode( vim.eval( '&omnifunc' ) )
     if not self._omnifunc:
       return False
     if self.ShouldUseCache():
