@@ -22,14 +22,14 @@ from __future__ import absolute_import
 from builtins import * # noqa
 
 from future.utils import iteritems
-from utils import ( ByteOffsetToCodepointOffset,
+from ycm.protoycmd.utils import ( ByteOffsetToCodepointOffset,
                     CodepointOffsetToByteOffset,
                     HashableDict,
                     ToBytes,
                     ToUnicode,
                     SplitLines )
-from request_validation import EnsureRequestValid
-from identifier_utils import StartOfLongestIdentifierEndingAtIndex
+from ycm.protoycmd.request_validation import EnsureRequestValid
+from ycm.protoycmd.identifier_utils import StartOfLongestIdentifierEndingAtIndex
 import logging
 
 _logger = logging.getLogger( __name__ )

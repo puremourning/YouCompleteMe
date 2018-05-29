@@ -21,7 +21,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import * # noqa
 
-from responses import ServerError
+from ycm.protoycmd.responses import ServerError
 
 
 # Throws an exception if request doesn't have all the required fields.

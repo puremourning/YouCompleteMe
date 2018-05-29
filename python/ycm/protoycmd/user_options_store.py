@@ -24,7 +24,7 @@ from builtins import * # noqa
 import json
 import os
 from frozendict import frozendict
-from utils import ReadFile
+from ycm.protoycmd.utils import ReadFile
 
 _USER_OPTIONS = {}
 

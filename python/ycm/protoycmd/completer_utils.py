@@ -23,7 +23,8 @@ from builtins import * # noqa
 
 from collections import defaultdict
 from future.utils import iteritems
-from utils import re, ToUnicode
+from ycm.protoycmd.utils import ToUnicode
+import re
 
 
 DEFAULT_FILETYPE_TRIGGERS = {
