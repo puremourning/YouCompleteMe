@@ -79,13 +79,14 @@ def YouCompleteMe_InvalidPythonInterpreterPath_test( post_vim_message ):
       StopServer( ycm )
 
 
-@patch( 'ycmd.utils.PathToFirstExistingExecutable', return_value = None )
+@patch( 'ycm.protoycmd.utils.PathToFirstExistingExecutable',
+        return_value = None )
 @patch( 'ycm.paths._EndsWithPython', return_value = False )
 @patch( 'ycm.vimsupport.PostVimMessage' )
 def YouCompleteMe_NoPythonInterpreterFound_test( post_vim_message, *args ):
   with UserOptions( {} ):
     try:
-      with patch( 'ycmd.utils.ReadFile', side_effect = IOError ):
+      with patch( 'ycm.protoycmd.utils.ReadFile', side_effect = IOError ):
         ycm = YouCompleteMe()
 
       assert_that( ycm.IsServerAlive(), equal_to( False ) )
