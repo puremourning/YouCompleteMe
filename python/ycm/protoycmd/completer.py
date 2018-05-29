@@ -22,8 +22,8 @@ from __future__ import absolute_import
 from builtins import * # noqa
 
 from future import with_metaclass
-from completer_utils import PreparedTriggers
-from responses import NoDiagnosticSupport
+from ycm.protoycmd import completer_utils
+from ycm.protoycmd.responses import NoDiagnosticSupport
 import abc
 import threading
 
@@ -166,7 +166,7 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
     self.user_options = user_options
     self.min_num_chars = user_options[ 'min_num_of_chars_for_completion' ]
     self.prepared_triggers = (
-        PreparedTriggers(
+        completer_utils.PreparedTriggers(
             user_trigger_map = user_options[ 'semantic_triggers' ],
             filetype_set = set( self.SupportedFiletypes() ) )
         if user_options[ 'auto_trigger' ] else None )

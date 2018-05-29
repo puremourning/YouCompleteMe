@@ -29,7 +29,9 @@ from future.utils import native
 from base64 import b64decode, b64encode
 from ycm import vimsupport
 from ycm.protoycmd.utils import ToBytes, urljoin, urlparse, GetCurrentDirectory
-from ycm.protoycmd.hmac_utils import CreateRequestHmac, CreateHmac, SecureBytesEqual
+from ycm.protoycmd.hmac_utils import ( CreateRequestHmac,
+                                       CreateHmac,
+                                       SecureBytesEqual )
 from ycm.protoycmd.responses import ServerError, UnknownExtraConf
 
 _HEADERS = {'content-type': 'application/json'}
