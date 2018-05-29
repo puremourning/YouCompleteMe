@@ -33,7 +33,7 @@ from ycm.protoycmd.utils import ( ByteOffsetToCodepointOffset,
                                   JoinLinesAsUnicode,
                                   ToBytes,
                                   ToUnicode )
-from ycm import user_options_store
+from ycm.protoycmd import user_options_store
 
 BUFFER_COMMAND_MAP = { 'same-buffer'      : 'edit',
                        'horizontal-split' : 'split',
