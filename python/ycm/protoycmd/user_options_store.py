@@ -34,6 +34,7 @@ def DefaultOptions():
       os.path.dirname( os.path.abspath( __file__ ) ),
                        '..',
                        '..',
+                       '..',
                        'third_party',
                        'ycmd',
                        'ycmd',
