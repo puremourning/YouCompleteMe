@@ -54,7 +54,8 @@ def Response_FromOmniCompleter_test():
 
   eq_( request.Response(), {
     'completions': results,
-    'completion_start_column': 1
+    'completion_start_column': 1,
+    'flags': []
   } )
 
 

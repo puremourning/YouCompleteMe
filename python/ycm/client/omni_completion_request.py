@@ -49,7 +49,8 @@ class OmniCompletionRequest( CompletionRequest ):
   def Response( self ):
     return {
       'completions': self._results,
-      'completion_start_column': self.request_data[ 'start_column' ]
+      'completion_start_column': self.request_data[ 'start_column' ],
+      'flags': []
     }
 
 

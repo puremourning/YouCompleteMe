@@ -67,6 +67,7 @@ class CompletionRequest( BaseRequest ):
 
     response = self.HandleFuture( self._response_future,
                                   truncate_message = True )
+    print(response)
     if not response:
       return { 'completions': [],
                'overloads': [],
@@ -81,16 +82,18 @@ class CompletionRequest( BaseRequest ):
       _logger.error( exception )
       DisplayServerException( exception, truncate_message = True )
 
-    ( completions, overloads ) = _ExtractOverloads( response[ 'completions' ] )
+    _ExtractOverloads( response )
     flags = response[ 'flags' ] if 'flags' in response else []
-    return ( completions, overloads, flags )
+    if 'flags' not in response:
+      response[ 'flags' ] = []
+    return response
 
 
   def Response( self ):
-    ( response, overloads, flags ) = self.RawResponse()
+    response = self.RawResponse()
     response[ 'completions' ] = _ConvertCompletionDatasToVimDatas(
         response[ 'completions' ] )
-    return ( response, overloads, flags )
+    return response
 
 
   def OnCompleteDone( self ):
@@ -248,8 +251,14 @@ def _ConvertCompletionDatasToVimDatas( response_data ):
            for i, x in enumerate( response_data ) ]
 
 
-def _ExtractOverloads( completions ):
-  return ( [ c for c in completions
-              if 'kind' not in c or c[ 'kind' ] != 'OVERLOAD' ],
-           [ c for c in completions
-              if 'kind' in c and c[ 'kind' ] == 'OVERLOAD' ] )
+def _ExtractOverloads( response ):
+  completions_list = []
+  overloads_list = []
+  for c in response[ 'completions' ]:
+    if 'kind' not in c or c[ 'kind' ] != 'OVERLOAD':
+      completions_list.append( c )
+    else:
+      overloads_list.append( c )
+
+  response.update( { 'completions': completions_list,
+                     'overloads': overloads_list } )

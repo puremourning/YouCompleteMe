@@ -314,21 +314,21 @@ class YouCompleteMe( object ):
 
 
   def GetCompletionResponse( self ):
-    ( response, overloads, flags ) = self._latest_completion_request.Response()
+    response = self._latest_completion_request.Response()
     response[ 'completions' ] = base.AdjustCandidateInsertionText(
         response[ 'completions' ] )
 
-    if 'START_HINTS' in flags:
-      self._last_overloads = overloads
-      if overloads:
+    if 'START_HINTS' in response[ 'flags' ]:
+      self._last_overloads = response[ 'overloads' ]
+      if response[ 'overloads' ]:
         self._logger.debug( 'Starting overloads due to flag [{0}]'.format(
-          overloads ) )
-        vimsupport.ShowFunctionSignature( overloads )
+          response[ 'overloads' ] ) )
+        vimsupport.ShowFunctionSignature( response[ 'overloads' ] )
       else:
         self._logger.debug( 'Clearing overloads due to start flag and empty' )
         self._last_overloads = []
         vimsupport.ClearFunctionSignature()
-    elif 'STOP_HINTS' in flags:
+    elif 'STOP_HINTS' in response[ 'flags' ]:
       self._logger.debug( 'Clearing overloads due to flag' )
       self._last_overloads = []
       vimsupport.ClearFunctionSignature()
