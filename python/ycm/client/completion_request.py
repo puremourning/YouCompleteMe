@@ -67,7 +67,6 @@ class CompletionRequest( BaseRequest ):
 
     response = self.HandleFuture( self._response_future,
                                   truncate_message = True )
-    print(response)
     if not response:
       return { 'completions': [],
                'overloads': [],
@@ -83,7 +82,6 @@ class CompletionRequest( BaseRequest ):
       DisplayServerException( exception, truncate_message = True )
 
     _ExtractOverloads( response )
-    flags = response[ 'flags' ] if 'flags' in response else []
     if 'flags' not in response:
       response[ 'flags' ] = []
     return response
