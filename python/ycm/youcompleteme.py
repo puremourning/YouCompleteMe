@@ -29,6 +29,7 @@ import logging
 import os
 import signal
 import vim
+import fnmatch
 from subprocess import PIPE
 from tempfile import NamedTemporaryFile
 from ycm import base, paths, vimsupport
@@ -641,36 +642,38 @@ class YouCompleteMe( object ):
     vimsupport.CloseBuffersForFilename( logfile )
 
 
+  def _AskForLogFile( self, logfiles, size, mods ):
+    sorted_logfiles = sorted( list( logfiles ) )
+    try:
+      logfile_index = vimsupport.SelectFromList(
+        'Which logfile do you wish to open (or close if already open)?',
+        sorted_logfiles )
+    except RuntimeError as e:
+      vimsupport.PostVimMessage( str( e ) )
+      return
+
+    logfile = logfiles[ sorted_logfiles[ logfile_index ] ]
+    if not vimsupport.BufferIsVisibleForFilename( logfile ):
+      self._OpenLogfile( size, mods, logfile )
+    else:
+      self._CloseLogfile( logfile )
+
+
   def ToggleLogs( self, size, mods, *filenames ):
     logfiles = self.GetLogfiles()
     if not filenames:
-      sorted_logfiles = sorted( list( logfiles ) )
-      try:
-        logfile_index = vimsupport.SelectFromList(
-          'Which logfile do you wish to open (or close if already open)?',
-          sorted_logfiles )
-      except RuntimeError as e:
-        vimsupport.PostVimMessage( str( e ) )
-        return
-
-      logfile = logfiles[ sorted_logfiles[ logfile_index ] ]
-      if not vimsupport.BufferIsVisibleForFilename( logfile ):
-        self._OpenLogfile( size, mods, logfile )
-      else:
-        self._CloseLogfile( logfile )
+      self._AskForLogFile( logfiles, size, mods )
       return
 
     for filename in set( filenames ):
-      if filename not in logfiles:
-        continue
+      for logfile in fnmatch.filter( logfiles, filename ):
+        # logfiles contains the absolute path, logfile is the basename
+        logfile = logfiles[ logfile ]
+        if not vimsupport.BufferIsVisibleForFilename( logfile ):
+          self._OpenLogfile( size, mods, logfile )
+          continue
 
-      logfile = logfiles[ filename ]
-
-      if not vimsupport.BufferIsVisibleForFilename( logfile ):
-        self._OpenLogfile( size, mods, logfile )
-        continue
-
-      self._CloseLogfile( logfile )
+        self._CloseLogfile( logfile )
 
 
   def ShowDetailedDiagnostic( self ):
