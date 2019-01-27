@@ -93,6 +93,10 @@ class CompletionRequest( BaseRequest ):
 
       self._OnCompleteDone_FixIt( completion_extra_data )
 
+      snippet = completion_extra_data.get( 'snippet', None )
+      if snippet:
+        self._OnCompleteDone_Snippet( snippet )
+
 
   def _GetExtraDataUserMayHaveCompleted( self ):
     completed_item = vimsupport.GetVariableValue( 'v:completed_item' )
@@ -140,6 +144,11 @@ class CompletionRequest( BaseRequest ):
       vimsupport.ReplaceChunks( fixit[ 'chunks' ],
                                 silent = True,
                                 cursor_position = cursor_position )
+
+
+  def _OnCompleteDone_Snippet( self, snippet ):
+    vimsupport.ExpandSnippet( snippet[ 'snippet' ],
+                              snippet[ 'trigger_string' ] )
 
 
 def _FilterToMatchingCompletions( completed_item, completions ):
