@@ -1340,3 +1340,10 @@ def ScreenPositionForLineColumnInWindow( window, line, column ):
       WinIDForWindow( window ),
       line,
       column ) )
+
+
+def ExpandSnippet( snippet, trigger_string ):
+  if vim.eval( 'exists( "+UltiSnips#Anon" )' ):
+    vim.eval( "UltiSnips#Anon( '{}', '{}', 'unused description', 'i' )".format(
+      EscapeForVim( snippet ),
+      EscapeForVim( trigger_string ) ) )
