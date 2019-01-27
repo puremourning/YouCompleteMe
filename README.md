@@ -39,6 +39,7 @@ Contents
     - [FreeBSD/OpenBSD](#freebsdopenbsd)
     - [Full Installation Guide](#full-installation-guide)
 - [Quick Feature Summary](#quick-feature-summary)
+- [Language Server Protocol](#language-server-protocol)
 - [User Guide](#user-guide)
     - [General Usage](#general-usage)
     - [Client-Server Architecture](#client-server-architecture)
@@ -861,6 +862,53 @@ Quick Feature Summary
 * Organize imports (`OrganizeImports`)
 * Detection of java projects
 * Management of `jdt.ls` server instance
+
+# Language server protocol
+
+YouCompleteMe includes an implementation of a [Language Server Protocol][lsp]
+(LSP) client. In theory, this means that YCM can support completion and
+semantics in any language for which there is a language server implemented. In
+practice, however, there are many variations in both quality and compliance
+amongst language server implementations, and it is unlikely that a given server
+will work without some upfront plumbing (trust us on this one). So in order to
+provide the best overall experience, YouCompleteMe developers curate, test and
+include support for a specific subset of language servers for popular languages,
+including:
+
+* Java, using [jdt.ls][]
+* C-family languages, using [clangd]
+* YAML, using [yaml-language-server][]
+* Ruby, using [solargraph][]
+* PHP, using [php-language-server][]
+
+It's not very difficult to add new ones, assuming they are fairly well
+maintained and compliant, so please raise enhancement requests if there is a
+server you particularly want to support. PRs with full regression tests are also
+welcome.
+
+Currently YouCompleteMe supports the following language server protocol
+features:
+
+* Semantic completion, including:
+  * snippets (when UltiSnips is installed)
+  * `additionalTextEdit` for example for autmatic import
+* Asynchronous diagnostics
+* Asynchronous messages
+* Completer subcommands:
+  * GoToDefinition
+  * GoToDeclaration
+  * GoToReferences
+  * GoTo
+  * RefactorRename
+  * Format
+
+These are just the base set of subcommands, supported for all languages.
+Individual completers typically support more subcommands, such as FixIt,
+GetDoc, OrganizeImports, etc.  See above for the full list per file type.
+
+**NOTE**: `ycmd,` the server component of YouCompleteMe, does not provide a
+language server protocol server interface, and there is presently no plan to do
+so.
 
 User Guide
 ----------
@@ -3667,3 +3715,7 @@ This software is licensed under the [GPL v3 license][gpl].
 [clangd]: https://clang.llvm.org/extra/clangd.html
 [fixedcdb]: https://clang.llvm.org/docs/JSONCompilationDatabase.html#alternatives
 [clangd-indexing]: https://clang.llvm.org/extra/clangd.html#project-wide-indexing
+[yaml-language-server]: https://github.com/redhat-developer/yaml-language-server
+[php-language-server]: https://github.com/felixfbecker/php-language-server
+[solargraph]: http://solargraph.org
+[lsp]: https://microsoft.github.io/language-server-protocol/
