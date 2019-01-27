@@ -1339,3 +1339,11 @@ def DisplayWidth():
 
 def DisplayWidthOfString( s ):
   return GetIntValue( f"strdisplaywidth( '{ EscapeForVim( s ) }' )" )
+
+
+def ExpandSnippet( snippet, trigger_string ):
+  if vim.eval( 'exists( "+UltiSnips#Anon" )' ):
+    vim.eval( f"UltiSnips#Anon( '{ EscapeForVim( snippet ) }',"
+              f"                '{ EscapeForVim( trigger_string )  }',"
+               "                'unused description',"
+               "                'i' )" )
