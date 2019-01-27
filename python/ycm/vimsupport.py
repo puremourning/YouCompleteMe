@@ -1270,3 +1270,10 @@ def AutoCloseOnCurrentBuffer( name ):
   vim.command( 'autocmd WinLeave <buffer> '
                'if bufnr( "%" ) == expand( "<abuf>" ) | q | endif' )
   vim.command( 'augroup END' )
+
+
+def ExpandSnippet( snippet, trigger_string ):
+  if vim.eval( 'exists( "+UltiSnips#Anon" )' ):
+    vim.eval( "UltiSnips#Anon( '{}', '{}', 'unused description', 'i' )".format(
+      EscapeForVim( snippet ),
+      EscapeForVim( trigger_string ) ) )
