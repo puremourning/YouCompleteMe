@@ -137,12 +137,30 @@ def BufferModified( buffer_object ):
   return buffer_object.options[ 'mod' ]
 
 
+CachedBufferData = namedtuple( "CachedBufferData", [ "changedtick", "data" ] )
+JOINED_LINES_CACHE = {}
+
+
 def GetBufferData( buffer_object ):
-  return {
+  # Extracting and joining the whole file contents is expensive. Wit a number of
+  # unsaved buffers open this adds up, so cache the unsaved changes as a string.
+  changed_tick = GetBufferChangedTick( buffer_object.number )
+
+  if buffer_object.number in JOINED_LINES_CACHE:
+    cached_buffer_data = JOINED_LINES_CACHE[ buffer_object.number ]
+    if cached_buffer_data.changedtick == changed_tick:
+      return cached_buffer_data.data
+
+  # Either not in the cache or the file has changed since the cache was created
+  data = {
     # Add a newline to match what gets saved to disk. See #1455 for details.
     'contents': JoinLinesAsUnicode( buffer_object ) + '\n',
     'filetypes': FiletypesForBuffer( buffer_object )
   }
+  JOINED_LINES_CACHE[ buffer_object.number ] = CachedBufferData( changed_tick,
+                                                                 data )
+
+  return data
 
 
 def GetUnsavedAndSpecifiedBufferData( included_buffer, included_filepath ):
