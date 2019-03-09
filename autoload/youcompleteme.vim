@@ -329,6 +329,9 @@ function! s:SetUpKeyMappings()
     silent! exe 'inoremap <unique> <expr> ' . key .
           \ ' <SID>OnDeleteChar( "\' . key . '" )'
   endfor
+
+  inoremap <silent> <Plug>YcmExpandSnippet
+        \ <C-R>=<SID>ExpandCompletionSnippet()<CR>
 endfunction
 
 
@@ -1011,6 +1014,13 @@ endfunction
 
 function! s:ForceCompileAndDiagnostics()
   exec s:python_command "ycm_state.ForceCompileAndDiagnostics()"
+endfunction
+
+
+function! s:ExpandCompletionSnippet()
+  exec s:python_command "ycm_state.ExpandCompletionSnippet()"
+
+  return ''
 endfunction
 
 

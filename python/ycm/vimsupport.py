@@ -1272,8 +1272,52 @@ def AutoCloseOnCurrentBuffer( name ):
   vim.command( 'augroup END' )
 
 
-def ExpandSnippet( snippet, trigger_string ):
-  if vim.eval( 'exists( "+UltiSnips#Anon" )' ):
+def OverlapLength( left_string, right_string ):
+  """Returns the length of the overlap between two strings.
+  Example: "foo baro" and "baro zoo" -> 4
+  """
+  left_string_length = len( left_string )
+  right_string_length = len( right_string )
+
+  if not left_string_length or not right_string_length:
+    return 0
+
+  # Truncate the longer string.
+  if left_string_length > right_string_length:
+    left_string = left_string[ -right_string_length: ]
+  elif left_string_length < right_string_length:
+    right_string = right_string[ :left_string_length ]
+
+  if left_string == right_string:
+    return min( left_string_length, right_string_length )
+
+  # Start by looking for a single character match
+  # and increase length until no match is found.
+  best = 0
+  length = 1
+  while True:
+    pattern = left_string[ -length: ]
+    found = right_string.find( pattern )
+    if found < 0:
+      return best
+    length += found
+    if left_string[ -length: ] == right_string[ :length ]:
+      best = length
+      length += 1
+
+
+def ExpandSnippet( snippet ):
+  text_before_cursor = TextBeforeCursor()
+  overlap_len = OverlapLength( TextBeforeCursor(), snippet )
+  if not overlap_len:
+    return
+  try:
     vim.eval( "UltiSnips#Anon( '{}', '{}', 'unused description', 'i' )".format(
       EscapeForVim( snippet ),
-      EscapeForVim( trigger_string ) ) )
+      EscapeForVim( snippet[ :overlap_len ] ) ) )
+  except vim.error:
+    pass
+
+
+def SendKeys( keys ):
+  vim.eval( 'feedkeys( "{}" )'.format( keys ) )

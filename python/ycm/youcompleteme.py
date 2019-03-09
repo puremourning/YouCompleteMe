@@ -318,6 +318,10 @@ class YouCompleteMe( object ):
     return response
 
 
+  def ExpandCompletionSnippet( self ):
+    self._latest_completion_request.ExpandSnippet()
+
+
   def SendCommandRequest( self,
                           arguments,
                           modifiers,
