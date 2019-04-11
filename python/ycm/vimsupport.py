@@ -1324,17 +1324,20 @@ def OverlapLength( left_string, right_string ):
       length += 1
 
 
-def ExpandSnippet( snippet ):
-  text_before_cursor = TextBeforeCursor()
-  overlap_len = OverlapLength( TextBeforeCursor(), snippet )
-  if not overlap_len:
-    return
+def ExpandSnippet( cursor, snippet, trigger_string ):
+  import logging
+  logger = logging.getLogger( __name__ )
+  logger.info( 'expand %s with trigger %s and text: %s',
+               snippet,
+               trigger_string,
+               TextBeforeCursor() )
   try:
     vim.eval( "UltiSnips#Anon( '{}', '{}', 'unused description', 'i' )".format(
       EscapeForVim( snippet ),
-      EscapeForVim( snippet[ :overlap_len ] ) ) )
+      EscapeForVim( trigger_string ) ) )
   except vim.error:
-    pass
+    logger.exception( 'Vim error expanding snippet' )
+
 
 
 def SendKeys( keys ):

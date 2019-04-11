@@ -22,6 +22,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
+import json
 import logging
 from ycmd.utils import ToUnicode
 from ycm.client.base_request import ( BaseRequest, DisplayServerException,
@@ -156,13 +157,20 @@ class CompletionRequest( BaseRequest ):
 
 
   def _OnCompleteDone_Snippet( self, completion ):
-    self._snippet = completion.get( 'snippet' )
-    if self._snippet:
-      vimsupport.SendKeys( '\<Plug>YcmExpandSnippet' )
+    if 'snippet' in completion:
+      _logger.info( "Saving snippet %s", json.dumps( completion )  )
+      self._snippet_completion = completion
+      self._snippet_cursor = vimsupport.CurrentLineAndColumn()
+      vimsupport.SendKeys( r'\<Plug>YcmExpandSnippet' )
 
 
   def ExpandSnippet( self ):
-    vimsupport.ExpandSnippet( self._snippet )
+    _logger.info( "Expanding snippet %s",
+                  json.dumps( self._snippet_completion )  )
+    
+    vimsupport.ExpandSnippet( self._snippet_cursor,
+                              self._snippet_completion[ 'snippet' ],
+                              self._snippet_completion[ 'insertion_text' ] )
 
 
 def _GetRequiredNamespaceImport( completion ):
