@@ -31,7 +31,7 @@ import signal
 import vim
 from subprocess import PIPE
 from tempfile import NamedTemporaryFile
-from ycm import base, paths, vimsupport
+from ycm import base, paths, signature_help, vimsupport
 from ycm.buffer import ( BufferDict,
                          DIAGNOSTIC_UI_FILETYPES,
                          DIAGNOSTIC_UI_ASYNC_FILETYPES )
@@ -44,6 +44,7 @@ from ycm.client.base_request import BaseRequest, BuildRequestData
 from ycm.client.completer_available_request import SendCompleterAvailableRequest
 from ycm.client.command_request import SendCommandRequest
 from ycm.client.completion_request import CompletionRequest
+from ycm.client.signature_help_request import SignatureHelpRequest
 from ycm.client.debug_info_request import ( SendDebugInfoRequest,
                                             FormatDebugInfoResponse )
 from ycm.client.omni_completion_request import OmniCompletionRequest
@@ -113,6 +114,8 @@ class YouCompleteMe( object ):
     self._omnicomp = None
     self._buffers = None
     self._latest_completion_request = None
+    self._latest_signature_help_request = None
+    self._signature_help_state = signature_help.SignatureHelpState()
     self._logger = logging.getLogger( 'ycm' )
     self._client_logfile = None
     self._server_stdout = None
@@ -301,6 +304,7 @@ class YouCompleteMe( object ):
   def SendCompletionRequest( self, force_semantic = False ):
     request_data = BuildRequestData()
     request_data[ 'force_semantic' ] = force_semantic
+
     if not self.NativeFiletypeCompletionUsable():
       wrapped_request_data = RequestWrap( request_data )
       if self._omnicomp.ShouldUseNow( wrapped_request_data ):
@@ -324,6 +328,36 @@ class YouCompleteMe( object ):
     response[ 'completions' ] = base.AdjustCandidateInsertionText(
         response[ 'completions' ] )
     return response
+
+
+  def SendSignatureHelpRequest( self ):
+    if not self.NativeFiletypeCompletionUsable():
+      return
+
+    if not self._latest_completion_request:
+      return
+
+    request_data = self._latest_completion_request.request_data.copy()
+    request_data[ 'signature_help_state' ] = self._signature_help_state.state
+
+    self._AddExtraConfDataIfNeeded( request_data )
+    self._latest_signature_help_request = SignatureHelpRequest( request_data )
+    self._latest_signature_help_request.Start()
+
+
+  def SignatureHelpRequestReady( self ):
+    return bool( self._latest_signature_help_request and
+                 self._latest_signature_help_request.Done() )
+
+
+  def GetSignatureHelpResponse( self ):
+    return self._latest_signature_help_request.Response()
+
+
+  def UpdateSignatureHelp( self, signature_info ):
+    self._signature_help_state = signature_help.UpdateSignatureHelp(
+      self._signature_help_state,
+      signature_info )
 
 
   def SendCommandRequest( self,
