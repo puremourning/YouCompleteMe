@@ -30,6 +30,42 @@ jobs:
     env:
       CODECOV_TOKEN: $(CODECOV_TOKEN)
       CODECOV_JOB_NAME: '$(Agent.JobName)'
+- job: linuxvim
+  displayName: 'Linux Vim tests'
+  pool:
+    # List of available software on this image:
+    # https://github.com/Microsoft/azure-pipelines-image-generation/blob/master/images/linux/Ubuntu1604-README.md
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      'Python 2.7':
+        # Prior versions fail to compile with error "ld: library not found for
+        # -lSystemStubs"
+        YCM_PYTHON_VERSION: '2.7.2'
+        YCM_VIM_PYTHON: '-enable-pythoninterp'
+      'Python 3.5':
+        YCM_PYTHON_VERSION: '3.5.1'
+        YCM_VIM_PYTHON: '-enable-python3interp'
+    maxParallel: 2
+  variables:
+    COVERAGE: true
+    YCM_VIM_VERSION: 'v8.1.1875'
+    # we need to cat all the logs to stdout so that debugging in CI is plausible
+    YCM_TEST_STDOUT: true
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: ./azure/linux/install_dependencies.sh
+    displayName: Install dependencies
+  - script: ./azure/linux/build_vim.sh
+    displayName: Build vim and ycmd
+  - script: ./azure/linux/run_vim_tests.sh
+    displayName: Run vim tests
+  - script: ./azure/send_coverage.sh
+    displayName: Send coverage
+    env:
+      CODECOV_TOKEN: $(CODECOV_TOKEN)
+      CODECOV_JOB_NAME: '$(Agent.JobName)'
 - job: macos
   displayName: 'macOS'
   pool:
