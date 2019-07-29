@@ -32,9 +32,17 @@ for t in ${TESTS}; do
   fi
 done
 
+if [ -n "${COVERAGE}" ]; then
+  covimerage write_coverage --source $(pwd)/.. --data-file .coverage.vim \
+             .vim_profile
+
+  mv .coverage.* ../
+fi
+
 popd > /dev/null
 
 echo ""
 echo "All done."
+
 
 exit $RESULT

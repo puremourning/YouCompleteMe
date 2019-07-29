@@ -229,7 +229,6 @@ func AfterTheTest()
     call add(s:errors, 'Found errors in ' . s:testid . ':')
     call extend(s:errors, v:errors)
     let v:errors = []
-
   endif
 endfunc
 
@@ -288,6 +287,11 @@ func FinishTesting()
   call append(line('$'), s:messages)
   write
 
+  if exists( '$COVERAGE' )
+    pyx _cov.stop()
+    pyx _cov.save()
+  endif
+
   if s:fail > 0
     cquit!
   else
@@ -329,6 +333,28 @@ let s:tests = split(substitute(@q, 'function \(\k*()\)', '\1', 'g'))
 " If there is an extra argument filter the function names against it.
 if argc() > 1
   let s:tests = filter(s:tests, 'v:val =~ argv(1)')
+endif
+
+pyx <<EOF
+def _InitCoverage():
+  sys.path.insert( 1, os.path.join( os.getcwd(),
+                                    'lib',
+                                    'third_party',
+                                    'coveragepy' ) )
+  import coverage
+  cov = coverage.Coverage( data_file='.coverage.python' )
+  cov.start()
+  return cov
+
+import os
+if 'COVERAGE' in os.environ:
+  _cov = _InitCoverage()
+EOF
+
+" Init covimerage
+if exists( '$COVERAGE' )
+  profile start .vim_profile
+  exe 'profile! file */youcompleteme.vim'
 endif
 
 " Execute the tests in alphabetical order.
