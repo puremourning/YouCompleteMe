@@ -29,6 +29,13 @@ from ycm.client.base_request import ( BaseRequest, DisplayServerException,
 _logger = logging.getLogger( __name__ )
 
 
+class SigHelpAvailableByFileType( dict ):
+  def __missing__( self, filetype ):
+    request = SignatureHelpAvailableRequest( filetype )
+    self[ filetype ] = request
+    return request
+
+
 class SignatureHelpRequest( BaseRequest ):
   def __init__( self, request_data ):
     super( SignatureHelpRequest, self ).__init__()
@@ -43,6 +50,10 @@ class SignatureHelpRequest( BaseRequest ):
 
   def Done( self ):
     return bool( self._response_future ) and self._response_future.done()
+
+
+  def Reset( self ):
+    self._response_future = None
 
 
   def Response( self ):
@@ -63,3 +74,33 @@ class SignatureHelpRequest( BaseRequest ):
       DisplayServerException( exception, truncate_message = True )
 
     return response.get( 'signature_help' ) or {}
+
+
+class SignatureHelpAvailableRequest( BaseRequest ):
+  def __init__( self, filetype ):
+    super( SignatureHelpAvailableRequest, self ).__init__()
+    self._response_future = None
+    self.Start( filetype )
+
+
+  def Done( self ):
+    return bool( self._response_future ) and self._response_future.done()
+
+
+  def Response( self ):
+    if not self._response_future:
+      return None
+
+    response = self.HandleFuture( self._response_future,
+                                  truncate_message = True )
+
+    if not response:
+      return None
+
+    return response[ 'available' ]
+
+
+  def Start( self, filetype ):
+    self._response_future = self.GetDataFromHandlerAsync(
+      'signature_help_available',
+      payload = { 'subserver': filetype } )

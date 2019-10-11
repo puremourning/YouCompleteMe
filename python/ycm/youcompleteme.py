@@ -45,6 +45,7 @@ from ycm.client.completer_available_request import SendCompleterAvailableRequest
 from ycm.client.command_request import SendCommandRequest
 from ycm.client.completion_request import CompletionRequest
 from ycm.client.signature_help_request import SignatureHelpRequest
+from ycm.client.signature_help_request import SigHelpAvailableByFileType
 from ycm.client.debug_info_request import ( SendDebugInfoRequest,
                                             FormatDebugInfoResponse )
 from ycm.client.omni_completion_request import OmniCompletionRequest
@@ -115,6 +116,7 @@ class YouCompleteMe( object ):
     self._buffers = None
     self._latest_completion_request = None
     self._latest_signature_help_request = None
+    self._signature_help_available_requests = SigHelpAvailableByFileType()
     self._signature_help_state = signature_help.SignatureHelpState()
     self._logger = logging.getLogger( 'ycm' )
     self._client_logfile = None
@@ -322,6 +324,20 @@ class YouCompleteMe( object ):
 
 
   def SendSignatureHelpRequest( self ):
+    filetype = vimsupport.CurrentFiletypes()[ 0 ]
+    if not self._signature_help_available_requests[ filetype ].Done():
+      return
+
+    sig_help_available = self._signature_help_available_requests[
+        filetype ].Response()
+    if sig_help_available == 'NO':
+      return
+
+    if sig_help_available == 'PENDING':
+      # Send another /signature_help_available request
+      self._signature_help_available_requests[ filetype ].Start( filetype )
+      return
+
     if not self.NativeFiletypeCompletionUsable():
       return
 
@@ -332,7 +348,9 @@ class YouCompleteMe( object ):
     request_data[ 'signature_help_state' ] = self._signature_help_state.state
 
     self._AddExtraConfDataIfNeeded( request_data )
-    self._latest_signature_help_request = SignatureHelpRequest( request_data )
+
+    self._latest_signature_help_request = SignatureHelpRequest(
+      request_data )
     self._latest_signature_help_request.Start()
 
 
@@ -343,6 +361,12 @@ class YouCompleteMe( object ):
 
   def GetSignatureHelpResponse( self ):
     return self._latest_signature_help_request.Response()
+
+
+  def ClearSignatureHelp( self ):
+    self.UpdateSignatureHelp( {} )
+    if self._latest_signature_help_request:
+      self._latest_signature_help_request.Reset()
 
 
   def UpdateSignatureHelp( self, signature_info ):
@@ -504,6 +528,11 @@ class YouCompleteMe( object ):
 
 
   def OnBufferVisit( self ):
+    filetype = vimsupport.CurrentFiletypes()[ 0 ]
+    # The constructor of dictionary values starts the request,
+    # so the line below fires a new request only if the dictionary
+    # value is accessed for the first time.
+    self._signature_help_available_requests[ filetype ].Done()
     extra_data = {}
     self._AddUltiSnipsDataIfNeeded( extra_data )
     SendEventNotificationAsync( 'BufferVisit', extra_data = extra_data )
