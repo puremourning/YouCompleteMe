@@ -68,14 +68,14 @@ def _MakeSignatureHelpBuffer( signature_info ):
       } )
 
     parameters = ( signature.get( 'parameters' ) or [] )
-    cur_param_idx = -1
     for param_index, parameter in enumerate( parameters ):
       param_label = parameter[ 'label' ]
-      cur_param_idx = sig_label.find( param_label, cur_param_idx + 1 )
+      begin = int( param_label[ 0 ] )
+      end = int( param_label[ 1 ] )
       if param_index == active_parameter:
         props.append( {
-          'col': cur_param_idx + 1, # 1-based
-          'length': len( param_label ),
+          'col': begin + 1, # 1-based
+          'length': end - begin,
           'type': 'YCM-signature-help-current-argument'
         } )
 
