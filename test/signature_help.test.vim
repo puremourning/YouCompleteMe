@@ -507,15 +507,20 @@ function! Test_Signatures_TopLineWithPUM()
 
     " Push more characters into the typeahead buffer to trigger insert mode
     " completion.
-    call timer_start( 500, funcref( 'CheckCompletionVisibleAndSigHelpHidden' ) )
+    "
+    " Nte for some reason the first semantic response can take quite some time,
+    " and if our timer fires before then, the test just fails. so we take 2
+    " seconds here.
+    call timer_start( 2000, funcref( 'CheckCompletionVisibleAndSigHelpHidden' ) )
     call feedkeys( " os.", 't' )
   endfunction
 
   function! CheckCompletionVisibleAndSigHelpHidden( id ) closure
     " Completion popup now visible, overlapping where the sig help popup was
+    redraw
     call WaitForAssert( {-> assert_true( pumvisible() ) } )
-    call assert_equal( 1, pum_getpos().row )
-    call assert_equal( 28, pum_getpos().col )
+    call assert_equal( 1, get( pum_getpos(), 'row', -1 ) )
+    call assert_equal( 28, get( pum_getpos(), 'col', -1 ) )
     " so we hide the sig help popup.
     call WaitForAssert( {->
           \   assert_true(
@@ -527,9 +532,10 @@ function! Test_Signatures_TopLineWithPUM()
           \ } )
     call s:_CheckPopupPosition( s:popup_win_id, {} )
 
-    " We're done in in sert mode now.
+    " We're done in insert mode now.
     call feedkeys( "\<ESC>", 't' )
   endfunction
+
   " Edit the line and trigger signature help
   call timer_start( 500, funcref( 'CheckSigHelpAndTriggerCompletion' ) )
   call feedkeys( 'C(', 'ntx!' )

@@ -38,11 +38,13 @@ function! youcompleteme#test#setup#OpenFile( f ) abort
         \ } )
 
   " Need to wait for the server to be ready. The best way to do this is to
-  " force compile and diagnostics
+  " force compile and diagnostics, though this only works for the c-based
+  " completers. For python and others, we actually need to parse the debug info
+  " to check the server state.
   YcmForceCompileAndDiagnostics
 
   " Sometimes, that's just not enough to ensure stuff works
-  sleep 50m
+  sleep 500m
 
   " FIXME: We need a much more robust way to wait for the server to be ready
 endfunction
