@@ -29,6 +29,7 @@ import logging
 import os
 import signal
 import vim
+from collections import defaultdict
 from subprocess import PIPE
 from tempfile import NamedTemporaryFile
 from ycm import base, paths, signature_help, vimsupport
@@ -45,6 +46,7 @@ from ycm.client.completer_available_request import SendCompleterAvailableRequest
 from ycm.client.command_request import SendCommandRequest
 from ycm.client.completion_request import CompletionRequest
 from ycm.client.signature_help_request import SignatureHelpRequest
+from ycm.client.signature_help_request import SignatureHelpAvailableRequest
 from ycm.client.debug_info_request import ( SendDebugInfoRequest,
                                             FormatDebugInfoResponse )
 from ycm.client.omni_completion_request import OmniCompletionRequest
@@ -115,6 +117,8 @@ class YouCompleteMe( object ):
     self._buffers = None
     self._latest_completion_request = None
     self._latest_signature_help_request = None
+    self._latest_signature_available_request = None
+    self._signature_help_support = defaultdict( lambda: None )
     self._signature_help_state = signature_help.SignatureHelpState()
     self._logger = logging.getLogger( 'ycm' )
     self._client_logfile = None
@@ -332,8 +336,28 @@ class YouCompleteMe( object ):
     request_data[ 'signature_help_state' ] = self._signature_help_state.state
 
     self._AddExtraConfDataIfNeeded( request_data )
-    self._latest_signature_help_request = SignatureHelpRequest( request_data )
-    self._latest_signature_help_request.Start()
+
+    filetype = vimsupport.CurrentFiletypes()[ 0 ]
+    if self._signature_help_support[ filetype ] is None:
+
+      signature_help_available_request = SignatureHelpAvailableRequest(
+        request_data )
+      signature_help_available_request.Start()
+      while not signature_help_available_request.Done():
+        pass
+
+      self._signature_help_support[ filetype ] = (
+        signature_help_available_request.Response() )
+
+      if self._signature_help_support[ filetype ] is True:
+        self._latest_signature_help_request = SignatureHelpRequest(
+          request_data )
+        self._latest_signature_help_request.Start()
+
+    elif self._signature_help_support[ filetype ] is True:
+      self._latest_signature_help_request = SignatureHelpRequest(
+        request_data )
+      self._latest_signature_help_request.Start()
 
 
   def SignatureHelpRequestReady( self ):

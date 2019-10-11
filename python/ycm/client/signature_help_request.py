@@ -63,3 +63,33 @@ class SignatureHelpRequest( BaseRequest ):
       DisplayServerException( exception, truncate_message = True )
 
     return response.get( 'signature_help' ) or {}
+
+
+class SignatureHelpAvailableRequest( BaseRequest ):
+  def __init__( self, request_data ):
+    super( SignatureHelpAvailableRequest, self ).__init__()
+    self.request_data = request_data
+    self._response_future = None
+
+
+  def Done( self ):
+    return bool( self._response_future ) and self._response_future.done()
+
+
+  def Response( self ):
+    if not self._response_future:
+      return None
+
+    response = self.HandleFuture( self._response_future,
+                                  truncate_message = True )
+
+    if not response:
+      return None
+
+    return response
+
+
+  def Start( self ):
+    self._response_future = self.GetDataFromHandlerAsync(
+      'signature_help_available',
+      payload = { 'subserver': 'cpp' } )
