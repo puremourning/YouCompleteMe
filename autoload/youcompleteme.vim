@@ -1022,7 +1022,7 @@ function! s:ClearSignatureHelp()
 
   call timer_stop( s:pollers.signature_help.id )
   let s:signature_help = s:default_signature_help
-  call s:Pyeval( 'ycm_state.UpdateSignatureHelp( {} )' )
+  call s:Pyeval( 'ycm_state.ClearSignatureHelp()' )
 endfunction
 
 
