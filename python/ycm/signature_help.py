@@ -97,9 +97,8 @@ def UpdateSignatureHelp( state, signature_info ): # noqa
 
   if not signatures:
     if state.popup_win_id:
-      # TODO/FIXME: Should we use popup_hide() instead ?
-      vim.eval( "popup_close( {} )".format( state.popup_win_id ) )
-    return SignatureHelpState( None, SignatureHelpState.INACTIVE )
+      vim.eval( "popup_hide( {} )".format( state.popup_win_id ) )
+    return SignatureHelpState( state.popup_win_id, SignatureHelpState.INACTIVE )
 
   if state.state != SignatureHelpState.ACTIVE:
     state.anchor = vimsupport.CurrentLineAndColumn()
@@ -148,9 +147,8 @@ def UpdateSignatureHelp( state, signature_info ): # noqa
   if line <= 0:
     # Nowhere to put it so hide it
     if state.popup_win_id:
-      # TODO/FIXME: Should we use popup_hide() instead ?
-      vim.eval( "popup_close( {} )".format( state.popup_win_id ) )
-    return SignatureHelpState( None, SignatureHelpState.INACTIVE )
+      vim.eval( "popup_hide( {} )".format( state.popup_win_id ) )
+    return SignatureHelpState( state.popup_win_id, SignatureHelpState.INACTIVE )
 
   if int( screen_pos[ 'curscol' ] ) <= 1:
     col = 1

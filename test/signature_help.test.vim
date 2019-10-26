@@ -2,8 +2,8 @@ let s:timer_interval = 2000
 
 function! s:_ClearSigHelp()
   pythonx _sh_state = sh.UpdateSignatureHelp( _sh_state, {} )
-  call assert_true( pyxeval( '_sh_state.popup_win_id is None' ),
-        \ 'win id none with emtpy' )
+  call assert_true( pyxeval( '_sh_state.state == "INACTIVE"' ),
+        \ 'sh state INACTIVE' )
   unlet! s:popup_win_id
 endfunction
 
@@ -19,7 +19,7 @@ function s:_GetSigHelpWinID()
   call WaitForAssert( {->
         \   assert_true(
         \     pyxeval(
-        \       'ycm_state._signature_help_state.popup_win_id is not None'
+        \       'ycm_state._signature_help_state.state == "ACTIVE"'
         \     ),
         \     'popup_win_id'
         \   )
@@ -33,7 +33,8 @@ function! s:_CheckPopupPosition( winid, pos )
   let actual_pos = popup_getpos( a:winid )
   let ret = 0
   if a:pos->empty()
-    return assert_true( actual_pos->empty(), 'popup pos empty' )
+    return assert_true( actual_pos->empty() || !actual_pos.visible,
+                      \ 'popup hidden: ' . string( actual_pos) )
   endif
   for c in keys( a:pos )
     if !has_key( actual_pos, c )
@@ -145,7 +146,7 @@ function! Test_Signatures_After_Trigger()
     call WaitForAssert( {->
           \   assert_true(
           \     pyxeval(
-          \       'ycm_state._signature_help_state.popup_win_id is not None'
+          \       'ycm_state._signature_help_state.state == "ACTIVE"'
           \     ),
           \     'popup_win_id'
           \   )
@@ -168,13 +169,14 @@ function! Test_Signatures_After_Trigger()
   call WaitForAssert( {->
         \   assert_true(
         \     pyxeval(
-        \       'ycm_state._signature_help_state.popup_win_id is None'
+        \       'ycm_state._signature_help_state.state == "INACTIVE"'
         \     ),
         \     'popup_win_id'
         \   )
         \ } )
 
   call test_override( 'ALL', 0 )
+  call popup_clear()
   %bwipeout!
   delfunc! Check
 endfunction
@@ -220,7 +222,7 @@ function! Test_Signatures_With_PUM_NoSigns()
     call WaitForAssert( {->
           \   assert_true(
           \     pyxeval(
-          \       'ycm_state._signature_help_state.popup_win_id is not None'
+          \       'ycm_state._signature_help_state.state == "ACTIVE"'
           \     ),
           \     'popup_win_id'
           \   )
@@ -240,13 +242,14 @@ function! Test_Signatures_With_PUM_NoSigns()
   call WaitForAssert( {->
         \   assert_true(
         \     pyxeval(
-        \       'ycm_state._signature_help_state.popup_win_id is None'
+        \       'ycm_state._signature_help_state.state == "INACTIVE"'
         \     ),
         \     'popup_win_id'
         \   )
         \ } )
 
   call test_override( 'ALL', 0 )
+  call popup_clear()
   %bwipeout!
   delfunc! Check
   delfunc! Check2
@@ -296,7 +299,7 @@ function! Test_Signatures_With_PUM_Signs()
     call WaitForAssert( {->
           \   assert_true(
           \     pyxeval(
-          \       'ycm_state._signature_help_state.popup_win_id is not None'
+          \       'ycm_state._signature_help_state.state == "ACTIVE"'
           \     ),
           \     'popup_win_id'
           \   )
@@ -316,13 +319,14 @@ function! Test_Signatures_With_PUM_Signs()
   call WaitForAssert( {->
         \   assert_true(
         \     pyxeval(
-        \       'ycm_state._signature_help_state.popup_win_id is None'
+        \       'ycm_state._signature_help_state.state == "INACTIVE"'
         \     ),
         \     'popup_win_id'
         \   )
         \ } )
 
   call test_override( 'ALL', 0 )
+  call popup_clear()
   %bwipeout!
   delfunc! Check
   delfunc! Check2
@@ -508,6 +512,7 @@ function! Test_Signatures_TopLine()
   call feedkeys( 'cl(', 'ntx!' )
 
   call test_override( 'ALL', 0 )
+  call popup_clear()
   %bwipeout!
   delfun! Check
 endfunction
@@ -542,7 +547,7 @@ function! Test_Signatures_TopLineWithPUM()
     call WaitForAssert( {->
           \   assert_true(
           \     pyxeval(
-          \       'ycm_state._signature_help_state.popup_win_id is None'
+          \       'ycm_state._signature_help_state.state == "INACTIVE"'
           \     ),
           \     'popup_win_id'
           \   )
@@ -560,6 +565,7 @@ function! Test_Signatures_TopLineWithPUM()
   call feedkeys( 'C(', 'ntx!' )
 
   call test_override( 'ALL', 0 )
+  call popup_clear()
   %bwipeout!
 
   delfunc! CheckSigHelpAndTriggerCompletion
