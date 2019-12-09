@@ -2,12 +2,15 @@
 
 export EXTRA_CMAKE_ARGS="-DPATH_TO_LLVM_ROOT=$clang"
 
-# Use system go on RHEL7 +
 RHEL=$(lsb_release -s -r | sed 's/\..*//')
 PREFIX=""
 if [ $RHEL -lt "7" ]; then
     export PATH=/inf10xl_user1/third-party/go/bin:${PATH} 
 else
+    # Use pkg go on RHEL7 +
+    source /mma/users/benj/devs/tools/envs/scl_enable.bash
+    fid_enable /eems/eems/jenkins/opt/RHEL7-Stable/pkg-home/go
+
     PREFIX="scl enable devtoolset-8 rh-python36 rh-nodejs10 rh-ruby25 --"
 fi
 
