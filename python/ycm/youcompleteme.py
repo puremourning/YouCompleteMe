@@ -424,7 +424,7 @@ class YouCompleteMe:
     self._latest_async_command_request = None
 
     if text is None:
-      return [ '[No data]' ]
+      return ''
 
     return text.splitlines()
 
