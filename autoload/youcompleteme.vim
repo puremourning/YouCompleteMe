@@ -522,13 +522,15 @@ endfunction
 
 
 function! s:SetUpHover()
-  if !s:AllowedToCompleteInCurrentBuffer() || get( g:, 'ycm_disable_hover', 0 )
+  if !s:AllowedToCompleteInCurrentBuffer() || !get( g:, 'ycm_enable_hover', 0 )
     return
   endif
 
+  " TODO: Set this only for semantically-supported filetypes ?
 
-  if exists( '*popup_beval' )
-  endif
+  setlocal balloonexpr=YCMHover()
+  setlocal ballooneval
+  setlocal balloonevalterm
 endfunction
 
 
@@ -578,7 +580,6 @@ function! s:OnFileTypeSet()
   call s:SetUpCompleteopt()
   call s:SetCompleteFunc()
   call s:StartMessagePoll()
-  call s:SetUpHover()
 
   py3 ycm_state.OnFileTypeSet()
   call s:OnFileReadyToParse( 1 )
@@ -593,7 +594,6 @@ function! s:OnBufferEnter()
 
   call s:SetUpCompleteopt()
   call s:SetCompleteFunc()
-  call s:SetUpHover()
 
   py3 ycm_state.OnBufferVisit()
   " Last parse may be outdated because of changes from other buffers. Force a
@@ -670,6 +670,10 @@ function! s:PollFileParseResponse( ... )
   py3 ycm_state.HandleFileParseRequest()
   if py3eval( "ycm_state.ShouldResendFileParseRequest()" )
     call s:OnFileReadyToParse( 1 )
+  endif
+
+  if s:Pyeval( "ycm_state.NativeFiletypeCompletionUsable()" )
+    call s:SetUpHover()
   endif
 endfunction
 
