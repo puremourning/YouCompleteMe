@@ -645,7 +645,7 @@ function! s:PollFileParseResponse( ... )
     call s:OnFileReadyToParse( 1 )
   endif
 
-  if s:Pyeval( "ycm_state.NativeFiletypeCompletionUsable()" )
+  if py3eval( "ycm_state.NativeFiletypeCompletionUsable()" )
     call s:SetUpHover()
   endif
 endfunction
@@ -1074,7 +1074,7 @@ endfunction
 
 
 function! s:PollHoverResponse( id ) abort
-  if !s:Pyeval( 'ycm_state.AsyncCommandResponseReady()' )
+  if !py3eval( 'ycm_state.AsyncCommandResponseReady()' )
     let s:pollers.hover.id = timer_start(
           \ s:pollers.hover.wait_milliseconds,
           \ function( 's:PollHoverResponse' ) )
@@ -1082,7 +1082,7 @@ function! s:PollHoverResponse( id ) abort
   endif
 
   call s:StopPoller( s:pollers.hover )
-  call balloon_show( s:Pyeval( 'ycm_state.AsyncCommandResponseText()' ) )
+  call balloon_show( py3eval( 'ycm_state.AsyncCommandResponseText()' ) )
 endfunction
 
 
@@ -1092,11 +1092,11 @@ function! YCMHover() abort
     return ''
   endif
 
-  exec s:python_command "ycm_state.SendAsyncCommandRequestAtLocation( "
-        \ . "[ 'GetType' ], "
-        \ . "vimsupport.GetIntValue( 'v:beval_bufnr' ), "
-        \ . "vimsupport.GetIntValue( 'v:beval_lnum' ), "
-        \ . "vimsupport.GetIntValue( 'v:beval_col' ) ) "
+  py3 ycm_state.SendAsyncCommandRequestAtLocation(
+        \ [ 'GetType' ],
+        \ vimsupport.GetIntValue( 'v:beval_bufnr' ),
+        \ vimsupport.GetIntValue( 'v:beval_lnum' ),
+        \ vimsupport.GetIntValue( 'v:beval_col' ) )
 
   let s:pollers.hover.id = timer_start(
           \ s:pollers.hover.wait_milliseconds,
