@@ -585,7 +585,34 @@ def NumLinesInBuffer( buffer_object ):
 # Calling this function from the non-GUI thread will sometimes crash Vim. At
 # the time of writing, YCM only uses the GUI thread inside Vim (this used to
 # not be the case).
-def PostVimMessage( message, warning = True, truncate = False ):
+def PostVimMessage( message,
+                    warning = True,
+                    truncate = False,
+                    popup = False ):
+  if popup and VimSupportsPopupWindows():
+    return _PostVimMessageAsPopup( message, warning )
+
+  return _PostVimMessageToCommandLine( message, warning, truncate )
+
+
+def _PostVimMessageAsPopup( message, warning ):
+  if not isinstance( message, list ):
+    message = message.splitlines()
+  # FIXME: The deafult positioning is _terrible_
+  # Let's put it near to the status line
+
+  options = {
+    'highlight': 'WarningMsg' if warning else 'PMenu',
+    'line': vim.options[ 'lines' ] - vim.options[ 'cmdheight' ],
+    'col': 1,
+    'pos': 'botleft'
+  }
+  vim.eval( "popup_notification( {}, {} )".format( json.dumps( message ),
+                                                   json.dumps( options ) ) )
+
+
+
+def _PostVimMessageToCommandLine( message, warning, truncate ):
   """Display a message on the Vim status line. By default, the message is
   highlighted and logged to Vim command-line history (see :h history).
   Unset the |warning| parameter to disable this behavior. Set the |truncate|
@@ -1308,3 +1335,15 @@ def ScreenPositionForLineColumnInWindow( window, line, column ):
       WinIDForWindow( window ),
       line,
       column ) )
+
+
+def UsingPreviewPopup():
+  return 'popup' in ToUnicode( vim.options[ 'completeopt' ] ).split( ',' )
+
+
+def DisplayWidth():
+  return GetIntValue( '&columns' )
+
+
+def DisplayWidthOfString( s ):
+  return GetIntValue( "strdisplaywidth( '{}' )".format( EscapeForVim( s ) ) )

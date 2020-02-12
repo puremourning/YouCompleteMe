@@ -49,6 +49,10 @@ let s:pollers = {
       \   'receive_messages': {
       \     'id': -1,
       \     'wait_milliseconds': 100
+      \   },
+      \   'hover': {
+      \     'id': -1,
+      \     'wait_milliseconds': 100
       \   }
       \ }
 let s:buftype_blacklist = {
@@ -475,7 +479,9 @@ function! s:SetUpCompleteopt()
   " Also, having this option set breaks the plugin.
   set completeopt-=longest
 
-  if g:ycm_add_preview_to_completeopt
+  if g:ycm_add_preview_to_completeopt ==# 'popup' && exists( '*popup_open' )
+    set completeopt+=popup
+  elseif g:ycm_add_preview_to_completeopt
     set completeopt+=preview
   endif
 endfunction
@@ -489,6 +495,19 @@ endfunction
 function s:StopPoller( poller ) abort
   call timer_stop( a:poller.id )
   let a:poller.id = -1
+endfunction
+
+
+function! s:SetUpHover()
+  if !s:AllowedToCompleteInCurrentBuffer() || !get( g:, 'ycm_enable_hover', 0 )
+    return
+  endif
+
+  " TODO: Set this only for semantically-supported filetypes ?
+
+  setlocal balloonexpr=YCMHover()
+  setlocal ballooneval
+  setlocal balloonevalterm
 endfunction
 
 
@@ -626,6 +645,10 @@ function! s:PollFileParseResponse( ... )
   py3 ycm_state.HandleFileParseRequest()
   if py3eval( "ycm_state.ShouldResendFileParseRequest()" )
     call s:OnFileReadyToParse( 1 )
+  endif
+
+  if py3eval( "ycm_state.NativeFiletypeCompletionUsable()" )
+    call s:SetUpHover()
   endif
 endfunction
 
@@ -1052,6 +1075,39 @@ function! s:CompleterCommand( mods, count, line1, line2, ... )
         \ vimsupport.GetBoolValue( 'a:count != -1' ),
         \ vimsupport.GetIntValue( 'a:line1' ),
         \ vimsupport.GetIntValue( 'a:line2' ) )
+endfunction
+
+
+function! s:PollHoverResponse( id ) abort
+  if !py3eval( 'ycm_state.AsyncCommandResponseReady()' )
+    let s:pollers.hover.id = timer_start(
+          \ s:pollers.hover.wait_milliseconds,
+          \ function( 's:PollHoverResponse' ) )
+    return
+  endif
+
+  call s:StopPoller( s:pollers.hover )
+  call balloon_show( py3eval( 'ycm_state.AsyncCommandResponseText()' ) )
+endfunction
+
+
+function! YCMHover() abort
+  if s:pollers.hover.id != -1
+    " Don't start a new one (TODO: we should probably abort the existing one)
+    return ''
+  endif
+
+  py3 ycm_state.SendAsyncCommandRequestAtLocation(
+        \ [ 'GetType' ],
+        \ vimsupport.GetIntValue( 'v:beval_bufnr' ),
+        \ vimsupport.GetIntValue( 'v:beval_lnum' ),
+        \ vimsupport.GetIntValue( 'v:beval_col' ) )
+
+  let s:pollers.hover.id = timer_start(
+          \ s:pollers.hover.wait_milliseconds,
+          \ function( 's:PollHoverResponse' ) )
+
+  return ''
 endfunction
 
 
