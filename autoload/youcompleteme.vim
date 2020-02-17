@@ -678,7 +678,9 @@ function! s:OnInsertChar()
   endif
 
   call s:StopPoller( s:pollers.completion )
-  call s:CloseCompletionMenu()
+  if g:ycm_auto_trigger
+    call s:CloseCompletionMenu()
+  endif
 
   call s:StopPoller( s:pollers.signature_help )
 endfunction
@@ -753,12 +755,7 @@ function! s:OnTextChangedInsertMode()
         \ ( g:ycm_auto_trigger || s:force_semantic ) &&
         \ !s:InsideCommentOrStringAndShouldStop() &&
         \ !s:OnBlankLine()
-    " Immediately call previous completion to avoid flickers.
-    call s:Complete()
-    call s:RequestCompletion()
-
-    call s:UpdateSignatureHelp()
-    call s:RequestSignatureHelp()
+    call s:RequestStandardCompletion()
   endif
 
   py3 ycm_state.OnCursorMoved()
@@ -850,6 +847,49 @@ endfunction
 
 function! s:OnBlankLine()
   return py3eval( 'not vim.current.line or vim.current.line.isspace()' )
+endfunction
+
+
+function! youcompleteme#TriggerCompletionAsync()
+  " Public API function. This function can be used by users to customise
+  " auto-triggering behaviour, by disbling g:ycm_auto_trigger and implementing
+  " their own triggering.
+  "
+  " Note that a simple way to do that would be to
+  " :inoremap <C-x><C-u> <C-r>=youcompleteme#TriggerCompletionAsync()<CR>
+  "
+  " As a result of supporting that use-case, this function must always return ''
+  " just like s:RequestSemanticCompletion()
+  if !s:AllowedToCompleteInCurrentBuffer()
+    return ''
+  endif
+
+  if g:ycm_auto_trigger
+    return ''
+  endif
+
+  if &completefunc !=# "youcompleteme#CompleteFunc"
+    return ''
+  endif
+
+  call s:RequestStandardCompletion()
+  return ''
+endfunction
+
+
+function! s:RequestStandardCompletion()
+  " This function sends a background for completion at the current cursor
+  " position and starts polling for the response.
+  "
+  " It's called internally by YCM's auto-trigger, but can also be called by
+  " users customisting the completion behaviour, such as adding a delay, or
+  " manually requesting "normal" (as opposed to forced-semantic) completion.
+
+  " Immediately call previous completion to avoid flickers.
+  call s:Complete()
+  call s:RequestCompletion()
+  call s:UpdateSignatureHelp()
+  call s:RequestSignatureHelp()
 endfunction
 
 

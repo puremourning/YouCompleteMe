@@ -25,7 +25,7 @@ _logger = logging.getLogger( __name__ )
 class SigHelpAvailableByFileType( dict ):
   def __missing__( self, filetype ):
     request = SignatureHelpAvailableRequest( filetype )
-    self[ filetype ] = request
+    self.__setitem__( filetype, request )
     return request
 
 
