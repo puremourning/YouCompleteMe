@@ -76,7 +76,8 @@ def _HandlePollResponse( response, diagnostics_handler ):
       if 'message' in notification:
         PostVimMessage( notification[ 'message' ],
                         warning = False,
-                        truncate = True )
+                        truncate = True,
+                        popup = True )
       elif 'diagnostics' in notification:
         diagnostics_handler.UpdateWithNewDiagnosticsForFile(
           notification[ 'filepath' ],

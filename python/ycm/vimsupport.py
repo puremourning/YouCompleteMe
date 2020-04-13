@@ -595,20 +595,50 @@ def PostVimMessage( message,
   return _PostVimMessageToCommandLine( message, warning, truncate )
 
 
+class MessageUI:
+  def __init__( self ):
+    self._popup_id = None
+
+  def Show( self, message, warning ):
+    if not isinstance( message, list ):
+      message = message.splitlines()
+
+    self.Hide()
+
+    options = {
+      'line': vim.options[ 'lines' ] - vim.options[ 'cmdheight' ],
+      'col': 1,
+      'pos': 'botleft',
+      'highlight': 'WarningMsg' if warning else 'PMenu',
+    }
+
+    self._popup_id = GetIntValue(
+      vim.eval( "popup_notification( {}, {} )".format( json.dumps( message ),
+                                                       json.dumps( options ) ) )
+    )
+
+  def Hide( self ):
+    if self._IsVisible():
+      vim.eval( "popup_hide( {} )".format( self._popup_id ) )
+
+
+  def _IsVisible( self ):
+    if self._popup_id is None:
+      return False
+
+    info = vim.eval( 'popup_getpos( {} )'.format( self._popup_id ) )
+    if not info:
+      return False
+
+    return int( info[ 'visible' ] ) == 1
+
+
+MESSAGE_UI = MessageUI()
+
 def _PostVimMessageAsPopup( message, warning ):
-  if not isinstance( message, list ):
-    message = message.splitlines()
   # FIXME: The deafult positioning is _terrible_
   # Let's put it near to the status line
-
-  options = {
-    'highlight': 'WarningMsg' if warning else 'PMenu',
-    'line': vim.options[ 'lines' ] - vim.options[ 'cmdheight' ],
-    'col': 1,
-    'pos': 'botleft'
-  }
-  vim.eval( "popup_notification( {}, {} )".format( json.dumps( message ),
-                                                   json.dumps( options ) ) )
+  MESSAGE_UI.Show( message, warning )
 
 
 
