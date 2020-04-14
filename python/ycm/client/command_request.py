@@ -29,7 +29,6 @@ def _EnsureBackwardsCompatibility( arguments ):
 class CommandRequest( BaseRequest ):
   def __init__( self,
                 arguments,
-                buffer_command = 'same-buffer',
                 extra_data = None ):
     super( CommandRequest, self ).__init__()
     self._arguments = _EnsureBackwardsCompatibility( arguments )
