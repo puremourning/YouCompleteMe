@@ -48,7 +48,8 @@ HIGHLIGHT_GROUP = {
 
 def Initialise():
   for token_type, group in HIGHLIGHT_GROUP.items():
-    vimsupport.AddTextPropertyType( f'YCM_HL_{ token_type }', highlight = group )
+    vimsupport.AddTextPropertyType( f'YCM_HL_{ token_type }',
+                                    highlight = group )
 
 
 class SemanticHighlighting:
@@ -76,7 +77,10 @@ class SemanticHighlighting:
   def Update( self ):
     if not self.IsResponseReady():
       return
-    tokens = self._request.Response().get( 'tokens', [] )
+
+    # We requested a snapshot
+    response = self._request.Response()
+    tokens = response.get( 'tokens', [] )
 
     self.Clear()
 
@@ -93,6 +97,6 @@ class SemanticHighlighting:
 
   def Clear( self ):
     for prop_id, prop_type in self._props:
-      vimsupport.ClearTextProperty( prop_id, prop_type )
+      vimsupport.ClearTextProperty( self._bufnr, prop_id, prop_type )
 
     self._props = []

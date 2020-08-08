@@ -129,13 +129,13 @@ class Buffer:
   def SendSemanticTokensRequest( self, request_data ):
     self._semantic_highlighting.SendRequest( request_data )
 
+
   def SemanticTokensRequestReady( self ):
     return self._semantic_highlighting.IsResponseReady()
 
+
   def UpdateSemanticTokens( self ):
     self._semantic_highlighting.Update()
-
-
 
 
   def _ChangedTick( self ):

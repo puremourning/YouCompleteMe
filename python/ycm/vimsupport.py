@@ -1388,7 +1388,7 @@ else:
     props = {
       'id': prop_id,
       'type': prop_type,
-      'both': True,
+      'both': 1,
       'bufnr': bufnr,
     }
     vim.eval( f"prop_remove( { json.dumps( props ) } )" )

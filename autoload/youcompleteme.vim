@@ -34,24 +34,28 @@ let s:previous_allowed_buffer_number = 0
 let s:pollers = {
       \   'completion': {
       \     'id': -1,
-      \     'wait_milliseconds': 10
+      \     'wait_milliseconds': 10,
       \   },
       \   'signature_help': {
       \     'id': -1,
-      \     'wait_milliseconds': 10
+      \     'wait_milliseconds': 10,
       \   },
       \   'file_parse_response': {
       \     'id': -1,
-      \     'wait_milliseconds': 100
+      \     'wait_milliseconds': 100,
       \   },
       \   'server_ready': {
       \     'id': -1,
-      \     'wait_milliseconds': 100
+      \     'wait_milliseconds': 100,
       \   },
       \   'receive_messages': {
       \     'id': -1,
-      \     'wait_milliseconds': 100
-      \   }
+      \     'wait_milliseconds': 100,
+      \   },
+      \   'semantic_highlighting': {
+      \     'id': -1,
+      \     'wait_milliseconds': 100,
+      \   },
       \ }
 let s:buftype_blacklist = {
       \   'help': 1,
@@ -697,6 +701,12 @@ function! s:OnFileReadyToParse( ... )
     let s:pollers.file_parse_response.id = timer_start(
           \ s:pollers.file_parse_response.wait_milliseconds,
           \ function( 's:PollFileParseResponse' ) )
+
+    py3 ycm_state.UpdateSemanticHighlighting()
+    call s:StopPoller( s:pollers.semantic_highlighting )
+    let s:pollers.semantic_highlighting.id = timer_start(
+          \ s:pollers.semantic_highlighting.wait_milliseconds,
+          \ function( 's:PollSemanticHighlighting' ) )
   endif
 endfunction
 
@@ -713,6 +723,17 @@ function! s:PollFileParseResponse( ... )
   if py3eval( "ycm_state.ShouldResendFileParseRequest()" )
     call s:OnFileReadyToParse( 1 )
   endif
+endfunction
+
+
+function! s:PollSemanticHighlighting( ... )
+  if !py3eval( 'ycm_state.CurrentBuffer().SemanticTokensRequestReady()' )
+    let s:pollers.semantic_highlighting.id = timer_start(
+          \ s:pollers.semantic_highlighting.wait_milliseconds,
+          \ function( 's:PollSemanticHighlighting' ) )
+  endif
+
+  py3 ycm_state.CurrentBuffer().UpdateSemanticTokens()
 endfunction
 
 
