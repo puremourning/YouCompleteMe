@@ -18,6 +18,7 @@
 from ycm import vimsupport
 from ycm.client.event_notification import EventNotification
 from ycm.diagnostic_interface import DiagnosticInterface
+from ycm.semantic_highlighting import SemanticHighlighting
 
 DIAGNOSTIC_UI_FILETYPES = { 'cpp', 'cs', 'c', 'objc', 'objcpp', 'cuda',
                             'javascript', 'typescript', 'typescriptreact' }
@@ -36,6 +37,8 @@ class Buffer:
     self._parse_request = None
     self._should_resend = False
     self._diag_interface = DiagnosticInterface( bufnr, user_options )
+    self._semantic_highlighting = SemanticHighlighting( bufnr,
+                                                        user_options )
     self.UpdateFromFileTypes( filetypes )
 
 
@@ -121,6 +124,18 @@ class Buffer:
     self._filetypes = filetypes
     self._async_diags = not any( x in DIAGNOSTIC_UI_FILETYPES
       for x in filetypes )
+
+
+  def SendSemanticTokensRequest( self, request_data ):
+    self._semantic_highlighting.SendRequest( request_data )
+
+  def SemanticTokensRequestReady( self ):
+    return self._semantic_highlighting.IsResponseReady()
+
+  def UpdateSemanticTokens( self ):
+    self._semantic_highlighting.Update()
+
+
 
 
   def _ChangedTick( self ):

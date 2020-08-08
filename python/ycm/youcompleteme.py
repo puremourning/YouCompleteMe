@@ -450,6 +450,19 @@ class YouCompleteMe:
     return self._omnicomp
 
 
+  def UpdateSemanticHighlighting( self ):
+    buf = self.CurrentBuffer()
+
+    # FIXME: We don't need this request to have all the unmodified buffers in
+    # it
+    request = BuildRequestData()
+
+    # FIXME: Currently synchronous
+    buf.SendSemanticTokensRequest( request )
+    assert buf.SemanticTokensRequestReady()
+    buf.UpdateSemanticTokens()
+
+
   def FiletypeCompleterExistsForFiletype( self, filetype ):
     try:
       return self._available_completers[ filetype ]

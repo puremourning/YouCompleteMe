@@ -1288,6 +1288,12 @@ def AutoCloseOnCurrentBuffer( name ):
   vim.command( 'augroup END' )
 
 
+
+@memoize
+def VimSupportsTextProperties():
+  return VimHasFunctions( 'prop_add', 'prop_type_add' )
+
+
 @memoize
 def VimSupportsPopupWindows():
   return VimHasFunctions( 'popup_create',
@@ -1295,9 +1301,7 @@ def VimSupportsPopupWindows():
                           'popup_hide',
                           'popup_settext',
                           'popup_show',
-                          'popup_close',
-                          'prop_add',
-                          'prop_type_add' )
+                          'popup_close' ) and VimSupportsTextProperties()
 
 
 @memoize
@@ -1338,3 +1342,53 @@ def ExpandSnippet( snippet, trigger_string ):
               f"                '{ EscapeForVim( trigger_string )  }',"
                "                'unused description',"
                "                'i' )" )
+
+
+if not VimSupportsTextProperties():
+  def AddTextPropertyType( *args, **kwargs ):
+    pass
+  def AddTextProperty( *args, **kwargs ):
+    pass
+  def ClearTextProperty( *args, **kwargs ):
+    pass
+else:
+  def AddTextPropertyType( name, **kwargs ):
+    props = {
+      'highlight': 'Ignore',
+      'combine': False,
+      'start_incl': False,
+      'end_incl': False,
+      'priority': 10
+    }
+    props.update( kwargs )
+
+    vim.eval( f"prop_type_add( '{ EscapeForVim( name ) }', "
+              f"               { json.dumps( kwargs ) } )" )
+
+
+  NEXT_TEXT_PROP_ID = 0
+
+  def AddTextProperty( bufnr, prop_type, range ):
+    global NEXT_TEXT_PROP_ID
+    props = {
+      'end_lnum': range[ 'end' ][ 'line_num' ],
+      'end_col': range[ 'end' ][ 'column_num' ],
+      'bufnr': bufnr,
+      'id': NEXT_TEXT_PROP_ID,
+      'type': prop_type
+    }
+    vim.eval( f"prop_add( { range[ 'start' ][ 'line_num' ] },"
+              f"          { range[ 'start' ][ 'column_num' ] },"
+              f"          { json.dumps( props ) } )" )
+
+    NEXT_TEXT_PROP_ID += 1
+    return props[ 'id' ]
+
+  def ClearTextProperty( bufnr, prop_id, prop_type ):
+    props = {
+      'id': prop_id,
+      'type': prop_type,
+      'both': True,
+      'bufnr': bufnr,
+    }
+    vim.eval( f"prop_remove( { json.dumps( props ) } )" )

@@ -238,6 +238,7 @@ sys.path[ 0:0 ] = dependencies
 try:
   # Import the modules used in this file.
   from ycm import base, vimsupport, youcompleteme
+  from ycm import semantic_highlighting as ycm_semantic_highlighting
 
   if 'ycm_state' in globals():
     # If re-initializing, pretend that we shut down
@@ -245,6 +246,7 @@ try:
     del ycm_state
 
   ycm_state = youcompleteme.YouCompleteMe()
+  ycm_semantic_highlighting.Initialise()
 except Exception as error:
   # We don't use PostVimMessage or EchoText from the vimsupport module because
   # importing this module may fail.
