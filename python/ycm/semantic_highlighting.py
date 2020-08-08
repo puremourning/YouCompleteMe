@@ -28,13 +28,14 @@ HIGHLIGHT_GROUP = {
   'interface': 'Structure',
   'struct': 'Structure',
   'typeParameter': 'Identifier',
-  'parameter': 'Identifier',
-  'variable': 'Identifier',
-  'property': 'Identifier',
+  'parameter': 'Normal',
+  'variable': 'Normal',
+  'property': 'Normal',
   'enumMember': 'Identifier',
+  'enumConstant': 'Constant',
   'event': 'Identifier',
   'function': 'Function',
-  'member': 'Identifier',
+  'member': 'Normal',
   'macro': 'Macro',
   'keyword': 'Keyword',
   'modifier': 'Keyword',
@@ -47,9 +48,22 @@ HIGHLIGHT_GROUP = {
 
 
 def Initialise():
+  vimsupport.AddTextPropertyType( 'YCM_HL_UNKNOWN', highlight = 'WarningMsg' )
   for token_type, group in HIGHLIGHT_GROUP.items():
     vimsupport.AddTextPropertyType( f'YCM_HL_{ token_type }',
                                     highlight = group )
+
+
+# Use my birthday becuase why not
+NEXT_TEXT_PROP_ID = 70784
+
+def NextPropID():
+  global NEXT_TEXT_PROP_ID
+  try:
+    return NEXT_TEXT_PROP_ID
+  finally:
+    NEXT_TEXT_PROP_ID += 1
+
 
 
 class SemanticHighlighting:
@@ -57,8 +71,8 @@ class SemanticHighlighting:
 
   def __init__( self, bufnr, user_options ):
     self._request = None
-    self._props = []
     self._bufnr = bufnr
+    self._prop_id = NextPropID()
 
 
   def SendRequest( self, request_data ):
@@ -82,21 +96,16 @@ class SemanticHighlighting:
     response = self._request.Response()
     tokens = response.get( 'tokens', [] )
 
-    self.Clear()
+    prev_prop_id = self._prop_id
+    self._prop_id = NextPropID()
 
     for token in tokens:
       if token[ 'type' ] not in HIGHLIGHT_GROUP:
         continue
-
       prop_type = f"YCM_HL_{ token[ 'type' ] }"
-      self._props.append( ( vimsupport.AddTextProperty( self._bufnr,
-                                                        prop_type,
-                                                        token[ 'range' ] ),
-                            prop_type ) )
+      vimsupport.AddTextProperty( self._bufnr,
+                                  self._prop_id,
+                                  prop_type,
+                                  token[ 'range' ] )
 
-
-  def Clear( self ):
-    for prop_id, prop_type in self._props:
-      vimsupport.ClearTextProperty( self._bufnr, prop_id, prop_type )
-
-    self._props = []
+    vimsupport.ClearTextProperties( self._bufnr, prev_prop_id )

@@ -1349,7 +1349,7 @@ if not VimSupportsTextProperties():
     pass
   def AddTextProperty( *args, **kwargs ):
     pass
-  def ClearTextProperty( *args, **kwargs ):
+  def ClearTextProperties( *args, **kwargs ):
     pass
 else:
   def AddTextPropertyType( name, **kwargs ):
@@ -1366,29 +1366,22 @@ else:
               f"               { json.dumps( kwargs ) } )" )
 
 
-  NEXT_TEXT_PROP_ID = 0
-
-  def AddTextProperty( bufnr, prop_type, range ):
-    global NEXT_TEXT_PROP_ID
+  def AddTextProperty( bufnr, prop_id, prop_type, range ):
     props = {
       'end_lnum': range[ 'end' ][ 'line_num' ],
       'end_col': range[ 'end' ][ 'column_num' ],
       'bufnr': bufnr,
-      'id': NEXT_TEXT_PROP_ID,
+      'id': prop_id,
       'type': prop_type
     }
     vim.eval( f"prop_add( { range[ 'start' ][ 'line_num' ] },"
               f"          { range[ 'start' ][ 'column_num' ] },"
               f"          { json.dumps( props ) } )" )
 
-    NEXT_TEXT_PROP_ID += 1
-    return props[ 'id' ]
-
-  def ClearTextProperty( bufnr, prop_id, prop_type ):
+  def ClearTextProperties( bufnr, prop_id ):
     props = {
       'id': prop_id,
-      'type': prop_type,
-      'both': 1,
       'bufnr': bufnr,
+      'all': 1,
     }
     vim.eval( f"prop_remove( { json.dumps( props ) } )" )
