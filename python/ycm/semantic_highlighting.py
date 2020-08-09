@@ -82,9 +82,6 @@ class SemanticHighlighting:
     self._request = SemanticTokensRequest( request_data )
     self._request.Start()
 
-    # FIXME: Force waiting for the response
-    self._request.Response()
-
   def IsResponseReady( self ):
     return self._request is not None and self._request.Done()
 
@@ -94,6 +91,8 @@ class SemanticHighlighting:
 
     # We requested a snapshot
     response = self._request.Response()
+    self._request = None
+
     tokens = response.get( 'tokens', [] )
 
     prev_prop_id = self._prop_id
