@@ -156,7 +156,15 @@ class BaseRequest:
       headers = BaseRequest._ExtraHeaders( method,
                                            request_uri,
                                            sent_data )
-      _logger.debug( 'POST %s\n%s\n%s', request_uri, headers, sent_data )
+
+      # Don't log file contents, it's rearely useful and often makes the logs
+      # difficult to read
+      log_data = sent_data
+      if 'file_data' in data and _logger.isEnabledFor( logging.DEBUG ):
+        log_data = dict( data )
+        log_data[ 'file_data' ] = '<truncated>'
+        log_data = _ToUtf8Json( log_data )
+      _logger.debug( 'POST %s\n%s\n%s', request_uri, headers, log_data )
 
       return BaseRequest.Session().post(
         request_uri,
