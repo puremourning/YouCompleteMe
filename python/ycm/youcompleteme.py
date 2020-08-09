@@ -484,7 +484,10 @@ class YouCompleteMe:
     return self.CurrentBuffer().NeedsReparse()
 
 
-  def UpdateWithNewDiagnosticsForFile( self, filepath, diagnostics ):
+  def UpdateWithNewDiagnosticsForFile( self,
+                                       filepath,
+                                       diagnostics,
+                                       is_async ):
     if not self._user_options[ 'show_diagnostics_ui' ]:
       return
 
@@ -493,7 +496,8 @@ class YouCompleteMe:
       # Note: We only update location lists, etc. for visible buffers, because
       # otherwise we default to using the current location list and the results
       # are that non-visible buffer errors clobber visible ones.
-      self._buffers[ bufnr ].UpdateWithNewDiagnostics( diagnostics )
+      self._buffers[ bufnr ].UpdateWithNewDiagnostics( diagnostics,
+                                                       is_async )
     else:
       # The project contains errors in file "filepath", but that file is not
       # open in any buffer. This happens for Language Server Protocol-based

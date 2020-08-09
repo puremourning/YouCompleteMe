@@ -80,7 +80,8 @@ def _HandlePollResponse( response, diagnostics_handler ):
       elif 'diagnostics' in notification:
         diagnostics_handler.UpdateWithNewDiagnosticsForFile(
           notification[ 'filepath' ],
-          notification[ 'diagnostics' ] )
+          notification[ 'diagnostics' ],
+          is_async = True )
   elif response is False:
     # Don't keep polling for this file
     return False

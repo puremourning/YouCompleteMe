@@ -20,9 +20,6 @@ from ycm.client.event_notification import EventNotification
 from ycm.diagnostic_interface import DiagnosticInterface
 from ycm.semantic_highlighting import SemanticHighlighting
 
-DIAGNOSTIC_UI_FILETYPES = { 'cpp', 'cs', 'c', 'objc', 'objcpp', 'cuda',
-                            'javascript', 'typescript', 'typescriptreact' }
-
 
 # Emulates Vim buffer
 # Used to store buffer related information like diagnostics, latest parse
@@ -36,6 +33,10 @@ class Buffer:
     self._handled_tick = 0
     self._parse_request = None
     self._should_resend = False
+    # If we receive any diags asynchronously, we stop using the
+    # "FileReadyToParse" diags as these are never as up to date and tend to
+    # interfere
+    self._async_diags = False
     self._diag_interface = DiagnosticInterface( bufnr, user_options )
     self._semantic_highlighting = SemanticHighlighting( bufnr,
                                                         user_options )
@@ -76,7 +77,8 @@ class Buffer:
 
   def UpdateDiagnostics( self, force = False ):
     if force or not self._async_diags:
-      self.UpdateWithNewDiagnostics( self._parse_request.Response() )
+      self.UpdateWithNewDiagnostics( self._parse_request.Response(),
+                                     is_async = False )
     else:
       # We need to call the response method, because it might throw an exception
       # or require extra config confirmation, even if we don't actually use the
@@ -84,7 +86,11 @@ class Buffer:
       self._parse_request.Response()
 
 
-  def UpdateWithNewDiagnostics( self, diagnostics ):
+  def UpdateWithNewDiagnostics( self, diagnostics, is_async ):
+    if is_async:
+      # Ignore the FileReadyToParse diags not that we have async nes
+      self._async_diags = True
+
     self._diag_interface.UpdateWithNewDiagnostics( diagnostics )
 
 
@@ -122,8 +128,6 @@ class Buffer:
 
   def UpdateFromFileTypes( self, filetypes ):
     self._filetypes = filetypes
-    self._async_diags = not any( x in DIAGNOSTIC_UI_FILETYPES
-      for x in filetypes )
 
 
   def SendSemanticTokensRequest( self, request_data ):
