@@ -156,23 +156,38 @@ class BaseRequest:
       headers = BaseRequest._ExtraHeaders( method,
                                            request_uri,
                                            sent_data )
-      _logger.debug( 'POST %s\n%s\n%s', request_uri, headers, sent_data )
 
-      return BaseRequest.Session().post(
+      if _logger.isEnabledFor( logging.DEBUG ):
+        # Copy data and pop the file_data - we probably don't need it and it's
+        # very noisy!
+        dump_data = dict( data )
+        dump_data.pop( 'file_data', None )
+        dump_data.pop( 'contents', None )
+
+        _logger.debug( 'POST %s\n%s\n%s',
+                       request_uri,
+                       headers,
+                       _ToUtf8Json( dump_data ) )
+
+      future = BaseRequest.Session().post(
         request_uri,
         data = sent_data,
         headers = headers,
         timeout = ( _CONNECT_TIMEOUT_SEC, timeout ) )
 
-    headers = BaseRequest._ExtraHeaders( method, request_uri )
+    else:
+      headers = BaseRequest._ExtraHeaders( method, request_uri )
 
-    _logger.debug( 'GET %s (%s)\n%s', request_uri, payload, headers )
+      _logger.debug( 'GET %s (%s)\n%s', request_uri, payload, headers )
 
-    return BaseRequest.Session().get(
-      request_uri,
-      headers = headers,
-      timeout = ( _CONNECT_TIMEOUT_SEC, timeout ),
-      params = payload )
+      future = BaseRequest.Session().get(
+        request_uri,
+        headers = headers,
+        timeout = ( _CONNECT_TIMEOUT_SEC, timeout ),
+        params = payload )
+
+    future._handler = handler
+    return future
 
 
   @staticmethod
@@ -250,7 +265,7 @@ def BuildRequestData( buffer_number = None ):
 
 def _JsonFromFuture( future ):
   response = future.result()
-  _logger.debug( 'RX: %s\n%s', response, response.text )
+  _logger.debug( 'RX (%s): %s\n%s', future._handler, response, response.text )
   _ValidateResponseObject( response )
   if response.status_code == BaseRequest.Requests().codes.server_error:
     raise MakeServerException( response.json() )
