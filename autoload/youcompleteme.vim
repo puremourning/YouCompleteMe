@@ -1406,9 +1406,8 @@ if exists( '*popup_atcursor' )
           \     'fixed': 0,
           \   }
           \ )
-    call setbufvar( winbufnr( s:cursorhold_popup ),
-                            \ '&syntax',
-                            \ b:ycm_hover.syntax )
+    call win_execute( s:cursorhold_popup,
+                    \ 'setlocal syntax=' . b:ycm_hover.syntax )
   endfunction
 
 
