@@ -1297,13 +1297,9 @@ function! s:PollCommand( response_func, callback, id )
 endfunction
 
 
-function s:HandleSymbolFilterResults( id, results )
+function s:HandleSymbolFilterResults( filter_func, id, results )
   " TODO: Handle pending request here
   let s:find_symbol_status.waiting = 0
-
-  call popup_setoptions( a:id, {
-        \ 'title': 'Search for symbol: ' . s:find_symbol_status.query
-        \ } )
   let s:find_symbol_status.results = []
 
   if type( a:results ) == v:t_none || empty( a:results )
@@ -1316,6 +1312,7 @@ function s:HandleSymbolFilterResults( id, results )
 
   let s:find_symbol_status.results = results
   call s:RedrawFinderPopup( a:id )
+  call s:RequeryFinderPopup( a:filter_func, a:id )
 endfunction
 
 function s:RedrawFinderPopup( id )
@@ -1348,6 +1345,24 @@ function s:RedrawFinderPopup( id )
           \ ':call cursor( ['
           \   . string( s:find_symbol_status.selected + 1 )
           \   . ', 1] )' )
+  endif
+endfunction
+
+function! s:RequeryFinderPopup( filter_func, id )
+  " Update the title even if we delay the query, as this makes the UI feel
+  " snappy
+  call popup_setoptions( a:id, {
+        \ 'title': ' Search for symbol: ' . s:find_symbol_status.query . ' '
+        \ } )
+
+  if s:find_symbol_status.waiting == 1
+    let s:find_symbol_status.pending = 1
+  elseif s:find_symbol_status.pending == 1
+    let s:find_symbol_status.pending = 0
+    let s:find_symbol_status.waiting = 1
+    call a:filter_func( function( 's:HandleSymbolFilterResults',
+                      \           [ a:filter_func, a:id ] ),
+                      \ s:find_symbol_status.query )
   endif
 endfunction
 
@@ -1385,17 +1400,8 @@ function s:FindSymbolFilter( filter_func, id, key )
   endif
 
   if l:requery
-    if s:find_symbol_status.waiting == 1
-      let s:find_symbol_status.pending = 1
-    else
-      let s:find_symbol_status.pending = 0
-      let s:find_symbol_status.waiting = 1
-      call popup_setoptions( a:id, {
-            \ 'title': 'Search for symbol: ' . s:find_symbol_status.query
-            \ } )
-      call a:filter_func( function( 's:HandleSymbolFilterResults', [ a:id ] ),
-                        \ s:find_symbol_status.query )
-    endif
+    let s:find_symbol_status.pending = 1
+    call s:RequeryFinderPopup( a:filter_func, a:id )
   endif
 
   return 1
@@ -1443,8 +1449,10 @@ endfunction
 
 function! s:HandleDocumentSymbols( id, results )
   let s:find_symbol_status.raw_results = a:results
-  call s:SearchDocument( function( 's:HandleSymbolFilterResults', [ a:id ] ),
-                       \ '' )
+  call s:SearchDocument(
+        \ function( 's:HandleSymbolFilterResults',
+        \           [ function( 's:SearchDocument' ), a:id ] ),
+        \ '' )
 endfunction
 
 function! youcompleteme#FindSymbol( scope )
@@ -1462,7 +1470,8 @@ function! youcompleteme#FindSymbol( scope )
         \ }
 
   let opts = {
-        \ 'title': "Search for symbol: ",
+        \ 'title': " Search for symbol: ",
+        \ 'padding': [ 1, 2, 1, 2 ],
         \ 'wrap': 0,
         \ 'minwidth': &columns / 3 * 2,
         \ 'minheight': &lines / 3 * 2,
