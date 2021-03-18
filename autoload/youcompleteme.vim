@@ -563,6 +563,11 @@ function! s:EnableCompletingInCurrentBuffer()
 endfunction
 
 
+function! s:SetUpBufferMappings()
+  nnoremap <silent> <Plug>(YCMFindSymbol) <cmd>call youcompleteme#FindSymbol()<CR>
+endfunction
+
+
 function s:StopPoller( poller ) abort
   call timer_stop( a:poller.id )
   let a:poller.id = -1
@@ -655,6 +660,7 @@ function! s:OnFileTypeSet()
 
   call s:SetUpCompleteopt()
   call s:EnableCompletingInCurrentBuffer()
+  call s:SetUpBufferMappings()
   call s:StartMessagePoll()
   call s:EnableAutoHover()
 
@@ -680,6 +686,7 @@ function! s:OnBufferEnter()
 
   call s:SetUpCompleteopt()
   call s:EnableCompletingInCurrentBuffer()
+  call s:SetUpBufferMappings()
 
   py3 ycm_state.OnBufferVisit()
   " Last parse may be outdated because of changes from other buffers. Force a
@@ -1252,10 +1259,33 @@ function! youcompleteme#GetCommandResponseAsync( callback, ... )
 
   let s:pollers.command.id = timer_start(
         \ s:pollers.command.wait_milliseconds,
-        \ function( 's:PollCommand', [ a:callback ] ) )
+        \ function( 's:PollCommand', [ 'StringResponse', a:callback ] ) )
 endfunction
 
-function! s:PollCommand( callback, id )
+function! youcompleteme#GetRawCommandResponseAsync( callback, ... )
+  if !s:AllowedToCompleteInCurrentBuffer()
+    eval a:callback( { 'error': 'ycm not allowed in buffer' } )
+    return
+  endif
+
+  if !get( b:, 'ycm_completing' )
+    eval a:callback( { 'error': 'ycm disabled in buffer' } )
+    return
+  endif
+
+  if s:pollers.command.id != -1
+    eval a:callback( { 'error': 'request in progress' } )
+    return
+  endif
+
+  py3 ycm_state.SendCommandRequestAsync( vim.eval( "a:000" ) )
+
+  let s:pollers.command.id = timer_start(
+        \ s:pollers.command.wait_milliseconds,
+        \ function( 's:PollCommand', [ 'Response', a:callback ] ) )
+endfunction
+
+function! s:PollCommand( response_func, callback, id )
   if py3eval( 'ycm_state.GetCommandRequest() is None' )
     " Possible in case of race conditions and things like RestartServer
     " But particualrly in the tests
@@ -1265,17 +1295,184 @@ function! s:PollCommand( callback, id )
   if !py3eval( 'ycm_state.GetCommandRequest().Done()' )
     let s:pollers.command.id = timer_start(
           \ s:pollers.command.wait_milliseconds,
-          \ function( 's:PollCommand', [ a:callback ] ) )
+          \ function( 's:PollCommand', [ a:response_func, a:callback ] ) )
     return
   endif
 
   call s:StopPoller( s:pollers.command )
 
-  let result = py3eval( 'ycm_state.GetCommandRequest().StringResponse()' )
+  let result = py3eval( 'ycm_state.GetCommandRequest().'
+                      \ .a:response_func . '()' )
 
   eval a:callback( result )
 endfunction
 
+
+function s:HandleSymbolFilterResults( id, results )
+  " TODO: Handle pending request here
+  let s:find_symbol_status.waiting = 0
+
+  call popup_setoptions( a:id, {
+        \ 'title': 'Search for symbol: ' . s:find_symbol_status.query
+        \ } )
+  let s:find_symbol_status.results = []
+
+  if type( a:results ) == v:t_none || empty( a:results )
+    let results = []
+  elseif type( a:results ) != v:t_list
+    let results = [ a:results ]
+  else
+    let results = a:results
+  endif
+
+  let s:find_symbol_status.results = results
+  call s:RedrawFinderPopup( a:id )
+endfunction
+
+function s:RedrawFinderPopup( id )
+  if empty( s:find_symbol_status.results )
+    call popup_settext( a:id, 'No results' )
+    return
+  endif
+
+  let buffer = []
+  for result in s:find_symbol_status.results
+    call add( buffer, result[ 'description' ] )
+  endfor
+
+  call popup_settext( a:id, buffer )
+
+  if s:find_symbol_status.selected > -1
+    echom
+          \ ':call cursor( ['
+          \   . string( s:find_symbol_status.selected + 1 )
+          \   . ', 1] )'
+    call win_execute(
+          \ a:id,
+          \ ':call cursor( ['
+          \   . string( s:find_symbol_status.selected + 1 )
+          \   . ', 1] )' )
+  endif
+endfunction
+
+function s:FindSymbolFilter( id, key )
+  let l:requery = s:find_symbol_status.pending
+  let l:redraw = 0
+
+  " This is pretty terrible. We should proably start a prompt buffer and use the
+  " TextChangedI event in that buffer to trigger updating.
+  if charclass( a:key ) == 2
+    " word character
+    let s:find_symbol_status.query .= a:key
+    let l:requery = v:true
+  elseif a:key ==# "\<BS>"
+    if len( s:find_symbol_status.query ) > 0
+      let s:find_symbol_status.query = s:find_symbol_status.query[ : -2 ]
+      let l:requery = v:true
+    endif
+  elseif a:key ==# "\<C-j>" || a:key == "\<Down>"
+    let s:find_symbol_status.selected += 1
+    let l:redraw = 1
+  elseif a:key ==# "\<C-k>" || a:key == "\<Up>"
+    let s:find_symbol_status.selected -= 1
+    let l:redraw = 1
+  elseif a:key ==# "\<Esc>"
+    call popup_close( a:id, -1 )
+  elseif a:key ==# "\<CR>"
+    if s:find_symbol_status.selected >= 0
+      call popup_close( a:id, s:find_symbol_status.selected )
+    elseif len( s:find_symbol_status.results ) == 1
+      call popup_close( a:id, 0 )
+    endif
+  endif
+
+  " Clamp
+  let s:find_symbol_status.selected = max( [
+        \   s:find_symbol_status.selected,
+        \   -1
+        \ ] )
+  let s:find_symbol_status.selected = min( [
+        \   s:find_symbol_status.selected,
+        \   len( s:find_symbol_status.results ) - 1
+        \ ] )
+
+  if l:redraw
+    call s:RedrawFinderPopup( a:id )
+  endif
+
+  if l:requery
+    if s:find_symbol_status.waiting == 1
+      let s:find_symbol_status.pending = 1
+    else
+      let s:find_symbol_status.pending = 0
+      let s:find_symbol_status.waiting = 1
+      call popup_setoptions( a:id, {
+            \ 'title': 'Search for symbol: ' . s:find_symbol_status.query
+            \ } )
+      call youcompleteme#GetRawCommandResponseAsync(
+            \ function( 's:HandleSymbolFilterResults', [ a:id ] ),
+            \ 'GoToSymbol',
+            \ s:find_symbol_status.query )
+    endif
+  endif
+
+  return 1
+endfunction
+
+function! s:HandleSymbolFindResult( id, selected )
+  if a:selected < 0
+    return
+  endif
+
+  let selected = s:find_symbol_status.results[ a:selected ]
+
+  py3 vimsupport.OpenFilename(
+        \ vimsupport.ToUnicode( vim.eval( 'selected.filepath' ) ),
+        \ {
+          \ 'command': 'same-buffer',
+          \ 'focus': True,
+          \ 'position': [ int( vim.eval( 'selected.line_num' ) ),
+          \               int( vim.eval( 'selected.column_num' ) ) ],
+        \ }
+        \ )
+
+  echom 'selected:' string( selected )
+endfunction
+
+function! youcompleteme#FindSymbol()
+  if !py3eval( 'vimsupport.VimSupportsPopupWindows()' )
+    return
+  endif
+
+  let s:find_symbol_status = {
+        \ 'selected': -1,
+        \ 'query': '',
+        \ 'results': [],
+        \ 'waiting': 0,
+        \ 'pending': 0,
+        \ }
+
+  let opts = {
+        \ 'title': "Search for symbol: ",
+        \ 'wrap': 0,
+        \ 'minwidth': &columns / 3 * 2,
+        \ 'minheight': &lines / 3 * 2,
+        \ 'maxwidth': &columns / 3 * 2,
+        \ 'maxheight': &lines / 3 * 2,
+        \ 'line': &lines / 6,
+        \ 'col': &columns / 6,
+        \ 'pos': 'topleft',
+        \ 'drag': 1,
+        \ 'resize': 1,
+        \ 'close': 'button',
+        \ 'border': [],
+        \ 'filter': function( 's:FindSymbolFilter' ),
+        \ 'cursorline': 1,
+        \ 'callback': function( 's:HandleSymbolFindResult' ),
+        \ }
+
+  call popup_create( 'Type to query for stuff', opts )
+endfunction
 
 function! s:CompleterCommand( mods, count, line1, line2, ... )
   py3 ycm_state.SendCommandRequest(
