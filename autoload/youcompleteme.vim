@@ -1348,6 +1348,7 @@ function s:RedrawFinderPopup( id )
   endif
 endfunction
 
+" TODO: debounce this request ?
 function! s:RequeryFinderPopup( filter_func, id )
   " Update the title even if we delay the query, as this makes the UI feel
   " snappy
@@ -1486,6 +1487,7 @@ function! youcompleteme#FindSymbol( scope )
         \ 'border': [],
         \ 'cursorline': 1,
         \ 'callback': function( 's:HandleSymbolFindResult' ),
+        \ 'highlight': 'Normal',
         \ }
 
   if a:scope ==# 'document'
