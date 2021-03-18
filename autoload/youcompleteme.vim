@@ -564,7 +564,8 @@ endfunction
 
 
 function! s:SetUpBufferMappings()
-  nnoremap <silent> <Plug>(YCMFindSymbol) <cmd>call youcompleteme#FindSymbol()<CR>
+  nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace) <cmd>call youcompleteme#FindSymbol( 'workspace' )<CR>
+  nnoremap <silent> <Plug>(YCMFindSymbolInDocument) <cmd>call youcompleteme#FindSymbol( 'document' )<CR>
 endfunction
 
 
@@ -1318,6 +1319,17 @@ function s:HandleSymbolFilterResults( id, results )
 endfunction
 
 function s:RedrawFinderPopup( id )
+  " Clamp selected. If there are any results, the first one is selected by
+  " default
+  let s:find_symbol_status.selected = max( [
+        \   s:find_symbol_status.selected,
+        \   len( s:find_symbol_status.results ) > 0 ? 0 : -1
+        \ ] )
+  let s:find_symbol_status.selected = min( [
+        \   s:find_symbol_status.selected,
+        \   len( s:find_symbol_status.results ) - 1
+        \ ] )
+
   if empty( s:find_symbol_status.results )
     call popup_settext( a:id, 'No results' )
     return
@@ -1331,10 +1343,6 @@ function s:RedrawFinderPopup( id )
   call popup_settext( a:id, buffer )
 
   if s:find_symbol_status.selected > -1
-    echom
-          \ ':call cursor( ['
-          \   . string( s:find_symbol_status.selected + 1 )
-          \   . ', 1] )'
     call win_execute(
           \ a:id,
           \ ':call cursor( ['
@@ -1343,7 +1351,7 @@ function s:RedrawFinderPopup( id )
   endif
 endfunction
 
-function s:FindSymbolFilter( id, key )
+function s:FindSymbolFilter( filter_func, id, key )
   let l:requery = s:find_symbol_status.pending
   let l:redraw = 0
 
@@ -1369,20 +1377,8 @@ function s:FindSymbolFilter( id, key )
   elseif a:key ==# "\<CR>"
     if s:find_symbol_status.selected >= 0
       call popup_close( a:id, s:find_symbol_status.selected )
-    elseif len( s:find_symbol_status.results ) == 1
-      call popup_close( a:id, 0 )
     endif
   endif
-
-  " Clamp
-  let s:find_symbol_status.selected = max( [
-        \   s:find_symbol_status.selected,
-        \   -1
-        \ ] )
-  let s:find_symbol_status.selected = min( [
-        \   s:find_symbol_status.selected,
-        \   len( s:find_symbol_status.results ) - 1
-        \ ] )
 
   if l:redraw
     call s:RedrawFinderPopup( a:id )
@@ -1397,15 +1393,37 @@ function s:FindSymbolFilter( id, key )
       call popup_setoptions( a:id, {
             \ 'title': 'Search for symbol: ' . s:find_symbol_status.query
             \ } )
-      call youcompleteme#GetRawCommandResponseAsync(
-            \ function( 's:HandleSymbolFilterResults', [ a:id ] ),
-            \ 'GoToSymbol',
-            \ s:find_symbol_status.query )
+      call a:filter_func( function( 's:HandleSymbolFilterResults', [ a:id ] ),
+                        \ s:find_symbol_status.query )
     endif
   endif
 
   return 1
 endfunction
+
+function! s:SearchWorkspace( callback, query )
+  call youcompleteme#GetRawCommandResponseAsync(
+        \ a:callback,
+        \ 'GoToSymbol',
+        \ a:query )
+endfunction
+
+function! s:SearchDocument( callback, query )
+  if type( s:find_symbol_status.raw_results ) == v:t_none
+    return
+  endif
+
+  let response = py3eval(
+        \ '__import__( "ycm", fromlist = [ "client", "base_request" ] )'
+        \ . '.client.base_request.BaseRequest().PostDataToHandler('
+        \ . '  { "candidates": vim.eval( "s:find_symbol_status.raw_results" ),'
+        \ . '    "sort_property": "description",'
+        \ . '    "query": vimsupport.ToUnicode( vim.eval( "a:query" ) ) },'
+        \ . '  "filter_and_sort_candidates" )' )
+
+  eval a:callback( response )
+endfunction
+
 
 function! s:HandleSymbolFindResult( id, selected )
   if a:selected < 0
@@ -1414,20 +1432,22 @@ function! s:HandleSymbolFindResult( id, selected )
 
   let selected = s:find_symbol_status.results[ a:selected ]
 
-  py3 vimsupport.OpenFilename(
-        \ vimsupport.ToUnicode( vim.eval( 'selected.filepath' ) ),
-        \ {
-          \ 'command': 'same-buffer',
-          \ 'focus': True,
-          \ 'position': [ int( vim.eval( 'selected.line_num' ) ),
-          \               int( vim.eval( 'selected.column_num' ) ) ],
-        \ }
+  py3 vimsupport.JumpToLocation(
+        \ filename = vimsupport.ToUnicode( vim.eval( 'selected.filepath' ) ),
+        \ line = int( vim.eval( 'selected.line_num' ) ),
+        \ column = int( vim.eval( 'selected.column_num' ) ),
+        \ modifiers = '',
+        \ command = 'same-buffer'
         \ )
-
-  echom 'selected:' string( selected )
 endfunction
 
-function! youcompleteme#FindSymbol()
+function! s:HandleDocumentSymbols( id, results )
+  let s:find_symbol_status.raw_results = a:results
+  call s:SearchDocument( function( 's:HandleSymbolFilterResults', [ a:id ] ),
+                       \ '' )
+endfunction
+
+function! youcompleteme#FindSymbol( scope )
   if !py3eval( 'vimsupport.VimSupportsPopupWindows()' )
     return
   endif
@@ -1436,6 +1456,7 @@ function! youcompleteme#FindSymbol()
         \ 'selected': -1,
         \ 'query': '',
         \ 'results': [],
+        \ 'raw_results': v:none,
         \ 'waiting': 0,
         \ 'pending': 0,
         \ }
@@ -1454,12 +1475,28 @@ function! youcompleteme#FindSymbol()
         \ 'resize': 1,
         \ 'close': 'button',
         \ 'border': [],
-        \ 'filter': function( 's:FindSymbolFilter' ),
         \ 'cursorline': 1,
         \ 'callback': function( 's:HandleSymbolFindResult' ),
         \ }
 
-  call popup_create( 'Type to query for stuff', opts )
+  if a:scope ==# 'document'
+    let opts[ 'filter' ] = function(
+          \ 's:FindSymbolFilter',
+          \ [ function( 's:SearchDocument' ) ] )
+  else
+    let opts[ 'filter' ] = function(
+          \ 's:FindSymbolFilter',
+          \ [ function( 's:SearchWorkspace' ) ] )
+  endif
+
+
+  let id = popup_create( 'Type to query for stuff', opts )
+
+  if a:scope ==# 'document'
+    call youcompleteme#GetRawCommandResponseAsync(
+          \ function( 's:HandleDocumentSymbols', [ id ] ),
+          \ 'GoToDocumentOutline' )
+  endif
 endfunction
 
 function! s:CompleterCommand( mods, count, line1, line2, ... )
