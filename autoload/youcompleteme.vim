@@ -1297,7 +1297,7 @@ function! s:PollCommand( response_func, callback, id )
 endfunction
 
 
-function s:HandleSymbolFilterResults( filter_func, id, results )
+function s:HandleSymbolFilterResults( id, results )
   " TODO: Handle pending request here
   let s:find_symbol_status.waiting = 0
   let s:find_symbol_status.results = []
@@ -1312,7 +1312,7 @@ function s:HandleSymbolFilterResults( filter_func, id, results )
 
   let s:find_symbol_status.results = results
   call s:RedrawFinderPopup( a:id )
-  call s:RequeryFinderPopup( a:filter_func, a:id )
+  call s:RequeryFinderPopup( a:id )
 endfunction
 
 function s:RedrawFinderPopup( id )
@@ -1349,7 +1349,7 @@ function s:RedrawFinderPopup( id )
 endfunction
 
 " TODO: debounce this request ?
-function! s:RequeryFinderPopup( filter_func, id )
+function! s:RequeryFinderPopup( id )
   " Update the title even if we delay the query, as this makes the UI feel
   " snappy
   call popup_setoptions( a:id, {
@@ -1361,38 +1361,34 @@ function! s:RequeryFinderPopup( filter_func, id )
   elseif s:find_symbol_status.pending == 1
     let s:find_symbol_status.pending = 0
     let s:find_symbol_status.waiting = 1
-    call a:filter_func( function( 's:HandleSymbolFilterResults',
-                      \           [ a:filter_func, a:id ] ),
-                      \ s:find_symbol_status.query )
+    call win_execute( s:find_symbol_status.winid,
+          \ "call s:find_symbol_status.filter("
+          \ . "function( 's:HandleSymbolFilterResults', [ a:id ] ),"
+          \ . "s:find_symbol_status.query )" )
   endif
 endfunction
 
-function s:FindSymbolFilter( filter_func, id, key )
-  let l:requery = s:find_symbol_status.pending
+function s:FindSymbolFilter( id, key )
   let l:redraw = 0
+  let l:handled = 0
 
   " This is pretty terrible. We should proably start a prompt buffer and use the
   " TextChangedI event in that buffer to trigger updating.
-  if charclass( a:key ) == 2
-    " word character
-    let s:find_symbol_status.query .= a:key
-    let l:requery = v:true
-  elseif a:key ==# "\<BS>"
-    if len( s:find_symbol_status.query ) > 0
-      let s:find_symbol_status.query = s:find_symbol_status.query[ : -2 ]
-      let l:requery = v:true
-    endif
-  elseif a:key ==# "\<C-j>" || a:key == "\<Down>"
+  if a:key ==# "\<C-j>" || a:key ==# "\<Down>"
     let s:find_symbol_status.selected += 1
     let l:redraw = 1
-  elseif a:key ==# "\<C-k>" || a:key == "\<Up>"
+    let l:handled = 1
+  elseif a:key ==# "\<C-k>" || a:key ==# "\<Up>"
     let s:find_symbol_status.selected -= 1
     let l:redraw = 1
+    let l:handled = 1
   elseif a:key ==# "\<Esc>"
     call popup_close( a:id, -1 )
+    let l:handled = 1
   elseif a:key ==# "\<CR>"
     if s:find_symbol_status.selected >= 0
       call popup_close( a:id, s:find_symbol_status.selected )
+      let l:handled = 1
     endif
   endif
 
@@ -1400,12 +1396,7 @@ function s:FindSymbolFilter( filter_func, id, key )
     call s:RedrawFinderPopup( a:id )
   endif
 
-  if l:requery
-    let s:find_symbol_status.pending = 1
-    call s:RequeryFinderPopup( a:filter_func, a:id )
-  endif
-
-  return 1
+  return l:handled
 endfunction
 
 function! s:SearchWorkspace( callback, query )
@@ -1439,6 +1430,12 @@ function! s:HandleSymbolFindResult( id, selected )
 
   let selected = s:find_symbol_status.results[ a:selected ]
 
+  stopinsert
+  call win_getid( s:find_symbol_status.filter_winid )
+  bwipe
+  
+
+  call win_gotoid( s:find_symbol_status.winid )
   py3 vimsupport.JumpToLocation(
         \ filename = vimsupport.ToUnicode( vim.eval( 'selected.filepath' ) ),
         \ line = int( vim.eval( 'selected.line_num' ) ),
@@ -1451,9 +1448,17 @@ endfunction
 function! s:HandleDocumentSymbols( id, results )
   let s:find_symbol_status.raw_results = a:results
   call s:SearchDocument(
-        \ function( 's:HandleSymbolFilterResults',
-        \           [ function( 's:SearchDocument' ), a:id ] ),
+        \ function( 's:HandleSymbolFilterResults', [ a:id ] ),
         \ '' )
+endfunction
+
+function! s:OnFilterTextChanged()
+  let bufnr = s:find_symbol_status.filter_bufnr
+  let query = getbufline( bufnr, '$' )[ 0 ]
+  let s:find_symbol_status.query = query[ len( prompt_getprompt( bufnr ) ) : ]
+  let s:find_symbol_status.pending = 1
+  call s:RequeryFinderPopup( s:find_symbol_status.id )
+  setlocal nomodified
 endfunction
 
 function! youcompleteme#FindSymbol( scope )
@@ -1468,6 +1473,12 @@ function! youcompleteme#FindSymbol( scope )
         \ 'raw_results': v:none,
         \ 'waiting': 0,
         \ 'pending': 0,
+        \ 'winid': win_getid(),
+        \ 'bufnr': bufnr(),
+        \ 'filter_bufnr': -1,
+        \ 'filter_winid': -1,
+        \ 'filter': v:none,
+        \ 'id': v:none,
         \ }
 
   let opts = {
@@ -1491,23 +1502,42 @@ function! youcompleteme#FindSymbol( scope )
         \ }
 
   if a:scope ==# 'document'
-    let opts[ 'filter' ] = function(
-          \ 's:FindSymbolFilter',
-          \ [ function( 's:SearchDocument' ) ] )
+    let opts[ 'filter' ] = function( 's:FindSymbolFilter' )
+    let s:find_symbol_status.filter = function( 's:SearchDocument' )
   else
-    let opts[ 'filter' ] = function(
-          \ 's:FindSymbolFilter',
-          \ [ function( 's:SearchWorkspace' ) ] )
+    let opts[ 'filter' ] = function( 's:FindSymbolFilter' )
+    let s:find_symbol_status.filter = function( 's:SearchWorkspace' )
   endif
 
-
   let id = popup_create( 'Type to query for stuff', opts )
+  let s:find_symbol_status.id = id
 
+  " Kick off the rquest now
+  let s:find_symbol_status.waiting = 1
   if a:scope ==# 'document'
     call youcompleteme#GetRawCommandResponseAsync(
           \ function( 's:HandleDocumentSymbols', [ id ] ),
           \ 'GoToDocumentOutline' )
+  else
+    call s:SearchWorkspace(
+          \ function( 's:HandleSymbolFilterResults', [ id ] ),
+          \ '' )
   endif
+
+  let bufnr = bufadd( '_ycm_filter_' )
+  call bufload( bufnr )
+  topleft 1split _ycm_filter_
+  let s:find_symbol_status.filter_bufnr = bufnr
+  let s:find_symbol_status.filter_winid = win_getid()
+
+  setlocal buftype=prompt noswapfile modifiable nomodified noreadonly
+  setlocal nobuflisted bufhidden=delete textwidth=0
+  call prompt_setprompt( bufnr(), 'Find Symbol: ' )
+  augroup YCMPromptFindSymbol
+    autocmd!
+    autocmd TextChanged,TextChangedI <buffer> call s:OnFilterTextChanged()
+  augroup END
+  startinsert
 endfunction
 
 function! s:CompleterCommand( mods, count, line1, line2, ... )
