@@ -1172,7 +1172,8 @@ def OpenFilename( filename, options = {} ):
   - watch: automatically watch for changes (default: False). This is useful
   for logs;
   - position: set the position where the file is opened (default: start).
-  Choices are start and end.
+  Choices are 'start', 'end' or a list, as supplied to the 'cursor()' vimscript
+  function
   - mods: The vim <mods> for the command, such as :vertical"""
 
   # Set the options.
@@ -1243,6 +1244,8 @@ def _SetUpLoadedBuffer( command, filename, fix, position, watch ):
 
   if position == 'end':
     vim.command( 'silent! normal! Gzz' )
+  elif isinstance( position, list ):
+    vim.eval( f'cursor( { json.dumps( position ) } )' )
 
 
 def BuildRange( start_line, end_line ):
