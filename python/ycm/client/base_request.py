@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2018 YouCompleteMe contributors
+# Copyright (C) 2013-2020 YouCompleteMe contributors
 #
 # This file is part of YouCompleteMe.
 #
@@ -20,18 +20,25 @@ import json
 import vim
 from base64 import b64decode, b64encode
 from hmac import compare_digest
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlencode
 from ycm import vimsupport
 from ycmd.utils import ToBytes, GetCurrentDirectory
 from ycmd.hmac_utils import CreateRequestHmac, CreateHmac
 from ycmd.responses import ServerError, UnknownExtraConf
 
 _HEADERS = { 'content-type': 'application/json' }
-_CONNECT_TIMEOUT_SEC = 0.01
-# Setting this to None seems to screw up the Requests/urllib3 libs.
-_READ_TIMEOUT_SEC = 30
+_READ_TIMEOUT_SEC = 5
 _HMAC_HEADER = 'x-ycm-hmac'
 _logger = logging.getLogger( __name__ )
+
+import os
+
+# _HTTP_INTERFACE = 'http9'
+_HTTP_INTERFACE = os.environ.get( 'YCM_HTTP_INTERFACE', 'http' )
+
+
+class YCMConnectionError( Exception ):
+  pass
 
 
 class BaseRequest:
@@ -77,11 +84,10 @@ class BaseRequest:
         else:
           _IgnoreExtraConfFile( e.extra_conf_file )
         self._should_resend = True
-    except BaseRequest.Requests().exceptions.ConnectionError as e:
-      # We don't display this exception to the user since it is likely to happen
-      # for each subsequent request (typically if the server crashed) and we
-      # don't want to spam the user with it.
-      _logger.error( e )
+    except YCMConnectionError as e:
+      _logger.debug( 'Failed to establish connection for %s: %s',
+                     future.context,
+                     e )
     except Exception as e:
       _logger.exception( 'Error while handling server response' )
       if display_message:
@@ -91,10 +97,12 @@ class BaseRequest:
 
 
   # This method blocks
-  # |timeout| is num seconds to tolerate no response from server before giving
-  # up; see Requests docs for details (we just pass the param along).
-  # See the HandleFuture method for the |display_message| and |truncate_message|
-  # parameters.
+  #
+  # |timeout| is num seconds to tolerate no response from
+  # server before giving up
+  #
+  # See the HandleFuture method for the |display_message| and
+  # |truncate_message| parameters.
   def GetDataFromHandler( self,
                           handler,
                           timeout = _READ_TIMEOUT_SEC,
@@ -117,7 +125,7 @@ class BaseRequest:
 
   # This is the blocking version of the method. See below for async.
   # |timeout| is num seconds to tolerate no response from server before giving
-  # up; see Requests docs for details (we just pass the param along).
+  # up.
   # See the HandleFuture method for the |display_message| and |truncate_message|
   # parameters.
   def PostDataToHandler( self,
@@ -134,7 +142,7 @@ class BaseRequest:
 
   # This returns a future! Use HandleFuture to get the value.
   # |timeout| is num seconds to tolerate no response from server before giving
-  # up; see Requests docs for details (we just pass the param along).
+  # up.
   @staticmethod
   def PostDataToHandlerAsync( data, handler, timeout = _READ_TIMEOUT_SEC ):
     return BaseRequest._TalkToHandlerAsync( data, handler, 'POST', timeout )
@@ -150,13 +158,13 @@ class BaseRequest:
                            method,
                            timeout = _READ_TIMEOUT_SEC,
                            payload = None ):
+
     request_uri = _BuildUri( handler )
     if method == 'POST':
       sent_data = _ToUtf8Json( data )
       headers = BaseRequest._ExtraHeaders( method,
                                            request_uri,
                                            sent_data )
-
       if _logger.isEnabledFor( logging.DEBUG ):
         # Copy data and pop the file_data - we probably don't need it and it's
         # very noisy!
@@ -169,24 +177,29 @@ class BaseRequest:
                        headers,
                        _ToUtf8Json( dump_data ) )
 
-      future = BaseRequest.Session().post(
-        request_uri,
-        data = sent_data,
-        headers = headers,
-        timeout = ( _CONNECT_TIMEOUT_SEC, timeout ) )
-
+      request_id  = vimsupport.Call( f'youcompleteme#{_HTTP_INTERFACE}#POST',
+                                     BaseRequest.server_host,
+                                     BaseRequest.server_port,
+                                     request_uri,
+                                     headers,
+                                     sent_data )
     else:
+      query_string = ''
+      if payload:
+        query_string = urlencode( payload )
+
       headers = BaseRequest._ExtraHeaders( method, request_uri )
+      _logger.debug( 'GET %s (%s)\n%s', request_uri, query_string, headers )
+      request_id  = vimsupport.Call( f'youcompleteme#{_HTTP_INTERFACE}#GET',
+                                     BaseRequest.server_host,
+                                     BaseRequest.server_port,
+                                     request_uri,
+                                     query_string,
+                                     headers )
 
-      _logger.debug( 'GET %s (%s)\n%s', request_uri, payload, headers )
-
-      future = BaseRequest.Session().get(
-        request_uri,
-        headers = headers,
-        timeout = ( _CONNECT_TIMEOUT_SEC, timeout ),
-        params = payload )
-
-    future._handler = handler
+    future = Future( request_id, request_uri, timeout, handler )
+    if request_id is None:
+      future.reject( YCMConnectionError( "Unable to connect to server" ) )
     return future
 
 
@@ -203,32 +216,102 @@ class BaseRequest:
     return headers
 
 
-  # These two methods exist to avoid importing the requests module at startup;
-  # reducing loading time since this module is slow to import.
-  @classmethod
-  def Requests( cls ):
-    try:
-      return cls.requests
-    except AttributeError:
-      import requests
-      cls.requests = requests
-      return requests
-
-
-  @classmethod
-  def Session( cls ):
-    try:
-      return cls.session
-    except AttributeError:
-      from ycm.unsafe_thread_pool_executor import UnsafeThreadPoolExecutor
-      from requests_futures.sessions import FuturesSession
-      executor = UnsafeThreadPoolExecutor( max_workers = 30 )
-      cls.session = FuturesSession( executor = executor )
-      return cls.session
-
-
   server_location = ''
+  server_host = ''
+  server_port = 0
   hmac_secret = ''
+
+
+class Future:
+  requests = {}
+
+  def __init__( self, request_id, context, timeout, handler ):
+    self.request_id = request_id
+    self.context = context
+
+    self._done = False
+    self._result = None
+    self._exception = None
+    self._on_complete_handlers = []
+    self._timeout = timeout
+    self._handler = handler
+    Future.requests[ request_id ] = self
+
+
+  def done( self ):
+    return self._done
+
+
+  def result( self ):
+    if not self.done():
+      # We have to use this to make sure they are passed as ints, as
+      # vimsupport.Call will pass ints as strings due to annoying if_python
+      # behaviour
+      vim.eval( f'youcompleteme#{_HTTP_INTERFACE}#Block( '
+                f'  { self.request_id }, '
+                f'  { self._timeout * 1000 } )' )
+
+    assert self.done()
+
+    if self._result is None:
+      if isinstance( self._exception, Exception ):
+        raise self._exception
+
+      raise RuntimeError( self._exception )
+
+    return self._result
+
+
+  def add_complete_handler( self, handler ):
+    self._on_complete_handlers.append( handler )
+
+
+  def resolve( self, status_code, header_map, data ):
+    self._result = Response( status_code, header_map, data )
+    vimsupport.Log( f'Result! { self._result }' )
+    self._done = True
+    for f in self._on_complete_handlers:
+      f( self )
+
+
+  def reject( self, why ):
+    self._result = None
+    self._exception = why
+    self._done = True
+
+
+  def __str__( self ):
+    return str( self._result )
+
+  def __repr__( self ):
+    return repr( self._result )
+
+
+class Response:
+  def __init__( self, status_code, header_map, data ):
+    self.text = vimsupport.ToUnicode( data )
+    self.content = vimsupport.ToBytes( data )
+    self.status_code = status_code
+    self.headers = header_map
+
+
+  # If the response is an error, throw
+  def raise_for_status( self ):
+    if self.status_code != 200:
+      raise RuntimeError(
+        "Sever rejected with status: {}".format( self.status_code ) )
+
+
+  # Returns the json payload
+  def json( self ):
+    return json.loads( self.text )
+
+  def __str__( self ):
+    return str( {
+      'content': self.text,
+      'status_code': self.status_code,
+      'headers': self.headers
+    } )
 
 
 def BuildRequestData( buffer_number = None ):
@@ -263,19 +346,25 @@ def BuildRequestData( buffer_number = None ):
   }
 
 
+
+HTTP_SERVER_ERRROR = 500
+
+
 def _JsonFromFuture( future ):
+  # Blocks here if necessary
   response = future.result()
   _logger.debug( 'RX (%s): %s\n%s', future._handler, response, response.text )
   _ValidateResponseObject( response )
-  if response.status_code == BaseRequest.Requests().codes.server_error:
+  if response.status_code == HTTP_SERVER_ERRROR:
     raise MakeServerException( response.json() )
 
-  # We let Requests handle the other status types, we only handle the 500
-  # error code.
   response.raise_for_status()
 
   if response.text:
+    vimsupport.Log( 'To JSON!!' )
     return response.json()
+
+  vimsupport.Log( 'NONE!' )
   return None
 
 

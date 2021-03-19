@@ -32,21 +32,21 @@ let s:completion_stopped = 0
 let s:default_completion = {}
 let s:completion = s:default_completion
 let s:default_signature_help = {}
-let s:signature_help = s:default_completion
+let s:signature_help = s:default_signature_help
 let s:previous_allowed_buffer_number = 0
-let s:pollers = {
+let s:requests = {
       \   'completion': {
       \     'id': -1,
-      \     'wait_milliseconds': 50
       \   },
       \   'signature_help': {
       \     'id': -1,
-      \     'wait_milliseconds': 100
       \   },
-      \   'file_parse_response': {
+      \   'command': {
       \     'id': -1,
-      \     'wait_milliseconds': 100
-      \   },
+      \     'callback': v:null,
+      \   }
+      \ }
+let s:pollers = {
       \   'server_ready': {
       \     'id': -1,
       \     'wait_milliseconds': 100
@@ -55,10 +55,6 @@ let s:pollers = {
       \     'id': -1,
       \     'wait_milliseconds': 100
       \   },
-      \   'command': {
-      \     'id': -1,
-      \     'wait_milliseconds': 100
-      \   }
       \ }
 let s:buftype_blacklist = {
       \   'help': 1,
@@ -577,6 +573,11 @@ function s:StopPoller( poller ) abort
 endfunction
 
 
+function s:Cancel( request ) abort
+  let a:request.id = -1
+endfunction
+
+
 function! s:OnVimLeave()
   " Workaround a NeoVim issue - not shutting down timers correctly
   " https://github.com/neovim/neovim/issues/6840
@@ -623,12 +624,27 @@ function! s:ResolveCompletionItem( item )
     return
   endif
 
-  if py3eval( 'ycm_state.ResolveCompletionItem( vim.eval( "a:item" ) )' )
-    call s:StopPoller( s:pollers.completion )
-    call timer_start( 0, function( 's:PollResolve', [ a:item ] ) )
-  else
-    call s:ShowInfoPopup( a:item )
+  let s:requests.completion.id = py3eval(
+        \ 'ycm_state.ResolveCompletionItem( vim.eval( "a:item" ) )' )
+
+  if s:requests.completion.id == -1
+    call youcompleteme#OnResolveRequestDone( -1, { 'completion':  a:item } )
   endif
+endfunction
+
+
+function! youcompleteme#OnResolveRequestDone( id, response )
+  let completion_item = a:response.completion
+  if empty( completion_item ) || empty( completion_item.info )
+    return
+  endif
+
+  if a:id != s:requests.completion.id
+    return
+  endif
+
+  call s:Cancel( s:requests.completion )
+  call s:ShowInfoPopup( completion_item )
 endfunction
 
 
@@ -746,26 +762,6 @@ function! s:OnFileReadyToParse( ... )
     " FIXME: sig hekp should be buffer local?
     call s:ClearSignatureHelp()
     py3 ycm_state.OnFileReadyToParse()
-
-    call s:StopPoller( s:pollers.file_parse_response )
-    let s:pollers.file_parse_response.id = timer_start(
-          \ s:pollers.file_parse_response.wait_milliseconds,
-          \ function( 's:PollFileParseResponse' ) )
-  endif
-endfunction
-
-
-function! s:PollFileParseResponse( ... )
-  if !py3eval( "ycm_state.FileParseRequestReady()" )
-    let s:pollers.file_parse_response.id = timer_start(
-          \ s:pollers.file_parse_response.wait_milliseconds,
-          \ function( 's:PollFileParseResponse' ) )
-    return
-  endif
-
-  py3 ycm_state.HandleFileParseRequest()
-  if py3eval( "ycm_state.ShouldResendFileParseRequest()" )
-    call s:OnFileReadyToParse( 1 )
   endif
 endfunction
 
@@ -799,7 +795,7 @@ endfunction
 
 
 function! s:StopCompletion( key )
-  call s:StopPoller( s:pollers.completion )
+  call s:Cancel( s:requests.completion )
 
   call s:ClearSignatureHelp()
 
@@ -880,7 +876,7 @@ function! s:OnInsertLeave()
 
   let s:last_char_inserted_by_user = v:false
 
-  call s:StopPoller( s:pollers.completion )
+  call s:Cancel( s:requests.completion )
   let s:force_semantic = 0
   let s:completion = s:default_completion
 
@@ -960,25 +956,13 @@ endfunction
 
 
 function! s:RequestCompletion()
-  call s:StopPoller( s:pollers.completion )
+  call s:Cancel( s:requests.completion )
 
-  py3 ycm_state.SendCompletionRequest(
-        \ vimsupport.GetBoolValue( 's:force_semantic' ) )
-
-  if py3eval( 'ycm_state.CompletionRequestReady()' )
-    " We can't call complete() syncrhounsouly in the TextChangedI/TextChangedP
-    " autocommmands (it's designed to be used async only completion). The result
-    " (somewhat oddly) is that the completion menu is shown, but ctrl-n doesn't
-    " actually select anything.
-    " When the request is satisfied synchronously (e.g. the omnicompleter), we
-    " must return to the main loop before triggering completion, so we use a 0ms
-    " timer for that.
-    let s:pollers.completion.id = timer_start( 0,
-                                             \ function( 's:PollCompletion' ) )
-  else
-    " Otherwise, use our usual poll timeout
-    call s:PollCompletion()
-  endif
+  let s:in_completion_request = 1
+  let s:requests.completion.id = py3eval(
+        \ 'ycm_state.SendCompletionRequest( ' .
+        \ ' vimsupport.GetBoolValue( "s:force_semantic" ) )' )
+  let s:in_completion_request = 0
 endfunction
 
 
@@ -989,23 +973,11 @@ function! s:RequestSemanticCompletion()
 
   if get( b:, 'ycm_completing' )
     let s:force_semantic = 1
-    call s:StopPoller( s:pollers.completion )
-    py3 ycm_state.SendCompletionRequest( True )
-
-    if py3eval( 'ycm_state.CompletionRequestReady()' )
-      " We can't call complete() syncrhounsouly in the TextChangedI/TextChangedP
-      " autocommmands (it's designed to be used async only completion). The
-      " result (somewhat oddly) is that the completion menu is shown, but ctrl-n
-      " doesn't actually select anything.  When the request is satisfied
-      " synchronously (e.g. the omnicompleter), we must return to the main loop
-      " before triggering completion, so we use a 0ms timer for that.
-      let s:pollers.completion.id = timer_start(
-            \ 0,
-            \ function( 's:PollCompletion' ) )
-    else
-      " Otherwise, use our usual poll timeout
-      call s:PollCompletion()
-    endif
+    call s:Cancel( s:requests.completion )
+    let s:in_completion_request = 1
+    let s:requests.completion.id = py3eval(
+          \ 'ycm_state.SendCompletionRequest( True )' )
+    let s:in_completion_request = 0
   endif
 
   " Since this function is called in a mapping through the expression register
@@ -1015,41 +987,23 @@ function! s:RequestSemanticCompletion()
 endfunction
 
 
-function! s:PollCompletion( ... )
-  if !py3eval( 'ycm_state.CompletionRequestReady()' )
-    let s:pollers.completion.id = timer_start(
-          \ s:pollers.completion.wait_milliseconds,
-          \ function( 's:PollCompletion' ) )
+function! youcompleteme#OnCompletionRequestDone( id, response, ... )
+  if s:in_completion_request
+    " We got called back synchronously. This can be problematic, so go again
+    " after a 0ms timer.
+    call timer_start( 0, funcref( 'youcompleteme#OnCompletionRequestDone',
+                                \ [ a:id, a:response ] ) )
+  endif
+
+  if a:id != s:requests.completion.id
     return
   endif
 
-  let s:completion = py3eval( 'ycm_state.GetCompletionResponse()' )
+  call s:Cancel( s:requests.completion )
+  let s:completion = a:response
   call s:Complete()
 endfunction
 
-
-function! s:PollResolve( item, ... )
-  if !py3eval( 'ycm_state.CompletionRequestReady()' )
-    let s:pollers.completion.id = timer_start(
-          \ s:pollers.completion.wait_milliseconds,
-          \ function( 's:PollResolve', [ a:item ] ) )
-    return
-  endif
-
-  " Note we re-use the 'completion' request for resolves. This prevents us
-  " sending a completion request and a resolve request at the same time, as
-  " resolve requests re-use the requset data from the last completion request
-  " and it must not change.
-  " We also re-use the poller, so that any new completion request effectively
-  " cancels this poller.
-  let completion_item =
-        \ py3eval( 'ycm_state.GetCompletionResponse()[ "completion" ]' )
-  if empty( completion_item ) || empty( completion_item.info )
-    return
-  endif
-
-  call s:ShowInfoPopup( completion_item )
-endfunction
 
 function! s:ShowInfoPopup( completion_item )
   let id = popup_findinfo()
@@ -1070,33 +1024,25 @@ function! s:RequestSignatureHelp()
     return
   endif
 
-  call s:StopPoller( s:pollers.signature_help )
+  call s:Cancel( s:requests.signature_help )
 
-  if py3eval( 'ycm_state.SendSignatureHelpRequest()' )
-    call s:PollSignatureHelp()
-  endif
+  let s:requests.signature_help.id =
+        \ py3eval( 'ycm_state.SendSignatureHelpRequest()' )
 endfunction
 
 
-function! s:PollSignatureHelp( ... )
+function! youcompleteme#OnSignatureHelpRequestDone( id, response )
   if !s:ShouldUseSignatureHelp()
     return
   endif
 
-  if a:0 == 0 && s:pollers.signature_help.id >= 0
-    " OK this is a bug. We have tried to poll for a response while the timer is
-    " already running. Just return and wait for the timer to fire.
+  if a:id != s:requests.signature_help.id
     return
   endif
 
-  if !py3eval( 'ycm_state.SignatureHelpRequestReady()' )
-    let s:pollers.signature_help.id = timer_start(
-          \ s:pollers.signature_help.wait_milliseconds,
-          \ function( 's:PollSignatureHelp' ) )
-    return
-  endif
+  call s:Cancel( s:requests.signature_help )
 
-  let s:signature_help = py3eval( 'ycm_state.GetSignatureHelpResponse()' )
+  let s:signature_help = a:response
   call s:UpdateSignatureHelp()
 endfunction
 
@@ -1147,7 +1093,7 @@ function! s:ClearSignatureHelp()
     return
   endif
 
-  call s:StopPoller( s:pollers.signature_help )
+  call s:Cancel( s:requests.signature_help )
   let s:signature_help = s:default_signature_help
   call py3eval( 'ycm_state.ClearSignatureHelp()' )
 endfunction
@@ -1183,7 +1129,7 @@ function! s:RestartServer()
   py3 ycm_state.RestartServer()
 
   call s:StopPoller( s:pollers.receive_messages )
-  call s:StopPoller( s:pollers.command )
+  call s:Cancel( s:requests.command )
   call s:ClearSignatureHelp()
 
   call s:StopPoller( s:pollers.server_ready )
@@ -1229,8 +1175,7 @@ function! youcompleteme#GetCommandResponse( ... )
   return py3eval( 'ycm_state.GetCommandResponse( vim.eval( "a:000" ) )' )
 endfunction
 
-
-function! youcompleteme#GetCommandResponseAsync( callback, ... )
+function! s:_DoCommandRequestAsync( callback, raw, args )
   if !s:AllowedToCompleteInCurrentBuffer()
     eval a:callback( '' )
     return
@@ -1241,61 +1186,35 @@ function! youcompleteme#GetCommandResponseAsync( callback, ... )
     return
   endif
 
-  if s:pollers.command.id != -1
+  if s:requests.command.id != -1
     eval a:callback( '' )
     return
   endif
 
-  py3 ycm_state.SendCommandRequestAsync( vim.eval( "a:000" ) )
+  let s:requests.command.callback = a:callback
+  let s:requests.command.id = py3eval(
+        \ 'ycm_state.SendCommandRequestAsync( int( vim.eval( "a:raw" ) ), '
+        \.'                                   vim.eval( "a:args" ) )' )
+endfunction
 
-  let s:pollers.command.id = timer_start(
-        \ s:pollers.command.wait_milliseconds,
-        \ function( 's:PollCommand', [ 'StringResponse', a:callback ] ) )
+function! youcompleteme#GetCommandResponseAsync( callback, ... )
+  call s:_DoCommandRequestAsync( a:callback, v:false, a:000 )
 endfunction
 
 function! youcompleteme#GetRawCommandResponseAsync( callback, ... )
-  if !s:AllowedToCompleteInCurrentBuffer()
-    eval a:callback( { 'error': 'ycm not allowed in buffer' } )
-    return
-  endif
-
-  if !get( b:, 'ycm_completing' )
-    eval a:callback( { 'error': 'ycm disabled in buffer' } )
-    return
-  endif
-
-  if s:pollers.command.id != -1
-    eval a:callback( { 'error': 'request in progress' } )
-    return
-  endif
-
-  py3 ycm_state.SendCommandRequestAsync( vim.eval( "a:000" ) )
-
-  let s:pollers.command.id = timer_start(
-        \ s:pollers.command.wait_milliseconds,
-        \ function( 's:PollCommand', [ 'Response', a:callback ] ) )
+  call s:_DoCommandRequestAsync( a:callback, v:true, a:000 )
 endfunction
 
-function! s:PollCommand( response_func, callback, id )
-  if py3eval( 'ycm_state.GetCommandRequest() is None' )
-    " Possible in case of race conditions and things like RestartServer
-    " But particualrly in the tests
+function! youcompleteme#OnCommandRequestDone( id, string_response )
+  if a:id != s:requests.command.id
     return
   endif
 
-  if !py3eval( 'ycm_state.GetCommandRequest().Done()' )
-    let s:pollers.command.id = timer_start(
-          \ s:pollers.command.wait_milliseconds,
-          \ function( 's:PollCommand', [ a:response_func, a:callback ] ) )
-    return
-  endif
+  let Callback = s:requests.command.callback
+  call s:Cancel( s:requests.command )
+  let s:requests.command.callback = v:null
 
-  call s:StopPoller( s:pollers.command )
-
-  let result = py3eval( 'ycm_state.GetCommandRequest().'
-                      \ .a:response_func . '()' )
-
-  eval a:callback( result )
+  eval Callback( a:string_response )
 endfunction
 
 
@@ -1701,8 +1620,16 @@ else
   nnoremap <silent> <plug>(YCMHover) <Nop>
 endif
 
-function! youcompleteme#Test_GetPollers()
-  return s:pollers
+"-------------------------------------------------------------------------------
+" Internal functions for testing only
+"-------------------------------------------------------------------------------
+
+function! youcompleteme#Test_GetRequests()
+  return s:requests
+endfunction
+
+function! youcompleteme#IsRequestPending( request )
+  return s:requests[ a:request ].id != -1
 endfunction
 
 " This is basic vim plugin boilerplate

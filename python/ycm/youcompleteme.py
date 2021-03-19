@@ -142,6 +142,8 @@ class YouCompleteMe:
     server_port = utils.GetUnusedLocalhostPort()
 
     BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
+    BaseRequest.server_host = '127.0.0.1'
+    BaseRequest.server_port = server_port
     BaseRequest.hmac_secret = hmac_secret
 
     try:
@@ -234,6 +236,7 @@ class YouCompleteMe:
     if not self._server_is_ready_with_cache and self.IsServerAlive():
       self._server_is_ready_with_cache = BaseRequest().GetDataFromHandler(
           'ready', display_message = False )
+      vimsupport.Log( f'ready? { self._server_is_ready_with_cache }' )
     return self._server_is_ready_with_cache
 
 
@@ -289,26 +292,54 @@ class YouCompleteMe:
     request_data = BuildRequestData()
     request_data[ 'force_semantic' ] = force_semantic
 
+    def handler( request_id, request ):
+      response = request.Response()
+      vimsupport.Call( 'youcompleteme#OnCompletionRequestDone',
+                       request_id,
+                       response )
+
     if not self.NativeFiletypeCompletionUsable():
       wrapped_request_data = RequestWrap( request_data )
       if self._omnicomp.ShouldUseNow( wrapped_request_data ):
         self._latest_completion_request = OmniCompletionRequest(
             self._omnicomp, wrapped_request_data )
-        self._latest_completion_request.Start()
-        return
+        return self._latest_completion_request.Start( handler )
 
     self._AddExtraConfDataIfNeeded( request_data )
     self._latest_completion_request = CompletionRequest( request_data )
-    self._latest_completion_request.Start()
+
+    return self._latest_completion_request.Start( handler )
 
 
-  def CompletionRequestReady( self ):
-    return bool( self._latest_completion_request and
-                 self._latest_completion_request.Done() )
+  def ResolveCompletionItem( self, item ):
+    # Note: As mentioned elsewhere, we replace the current completion request
+    # with a resolve request. It's not valid to have simultaneous resolve and
+    # completion requests, because the resolve request uses the request data
+    # from the last completion request and is therefore dependent on it not
+    # having changed.
+    #
+    # The result of this is that self.GetCurrentCompletionRequest() might return
+    # either a completion request of a resolve request and it's the
+    # responsibility of the vimscript code to ensure that it only does one at a
+    # time. This is handled by re-using the same poller for completions and
+    # resolves.
+    completion_request = self.GetCurrentCompletionRequest()
+    if not completion_request:
+      return -1
 
+    def handler( request_id, request ):
+      vimsupport.Call( 'youcompleteme#OnResolveRequestDone',
+                       request_id,
+                       request.Response() )
 
-  def GetCompletionResponse( self ):
-    return self._latest_completion_request.Response()
+    request_id, request = ResolveCompletionItem( completion_request,
+                                                 item,
+                                                 handler )
+    if request_id == -1:
+      return -1
+
+    self._latest_completion_request = request
+    return request_id
 
 
   def SignatureHelpAvailableRequestComplete( self, filetype, send_new=True ):
@@ -325,7 +356,7 @@ class YouCompleteMe:
     """Send a signature help request, if we're ready to. Return whether or not a
     request was sent (and should be checked later)"""
     if not self.NativeFiletypeCompletionUsable():
-      return False
+      return -1
 
     for filetype in vimsupport.CurrentFiletypes():
       if not self.SignatureHelpAvailableRequestComplete( filetype ):
@@ -342,7 +373,7 @@ class YouCompleteMe:
         continue
 
       if not self._latest_completion_request:
-        return False
+        return -1
 
       request_data = self._latest_completion_request.request_data.copy()
       request_data[ 'signature_help_state' ] = self._signature_help_state.state
@@ -350,19 +381,13 @@ class YouCompleteMe:
       self._AddExtraConfDataIfNeeded( request_data )
 
       self._latest_signature_help_request = SignatureHelpRequest( request_data )
-      self._latest_signature_help_request.Start()
-      return True
+      return self._latest_signature_help_request.Start(
+        lambda request_id, request: vimsupport.Call(
+          'youcompleteme#OnSignatureHelpRequestDone',
+          request_id,
+          request.Response() ) )
 
-    return False
-
-
-  def SignatureHelpRequestReady( self ):
-    return bool( self._latest_signature_help_request and
-                 self._latest_signature_help_request.Done() )
-
-
-  def GetSignatureHelpResponse( self ):
-    return self._latest_signature_help_request.Response()
+    return -1
 
 
   def ClearSignatureHelp( self ):
@@ -411,35 +436,41 @@ class YouCompleteMe:
                           has_range,
                           start_line,
                           end_line ):
-    final_arguments, extra_data = self._GetCommandRequestArguments(
-      arguments,
-      has_range,
-      start_line,
-      end_line )
-    return SendCommandRequest(
-      final_arguments,
-      modifiers,
-      self._user_options[ 'goto_buffer_command' ],
-      extra_data )
+    final_arguments, extra_data = self._GetCommandRequestArguments( arguments,
+                                                                    has_range,
+                                                                    start_line,
+                                                                    end_line )
+    return SendCommandRequest( final_arguments,
+                               modifiers,
+                               self._user_options[ 'goto_buffer_command' ],
+                               extra_data )
 
 
   def GetCommandResponse( self, arguments ):
-    final_arguments, extra_data = self._GetCommandRequestArguments(
-      arguments,
-      False,
-      0,
-      0 )
+    final_arguments, extra_data = self._GetCommandRequestArguments( arguments,
+                                                                    False,
+                                                                    0,
+                                                                    0 )
     return GetCommandResponse( final_arguments, extra_data )
 
 
-  def SendCommandRequestAsync( self, arguments ):
-    final_arguments, extra_data = self._GetCommandRequestArguments(
-      arguments,
-      False,
-      0,
-      0 )
-    self._latest_command_reqeust = SendCommandRequestAsync( final_arguments,
-                                                            extra_data )
+  def SendCommandRequestAsync( self, raw, arguments ):
+    final_arguments, extra_data = self._GetCommandRequestArguments( arguments,
+                                                                    False,
+                                                                    0,
+                                                                    0 )
+
+    def handler( request_id, request ):
+      response = request.Response() if raw else request.StringResponse()
+      vimsupport.Call( 'youcompleteme#OnCommandRequestDone',
+                       request_id,
+                       response )
+
+    request_id, _ = SendCommandRequestAsync( final_arguments,
+                                             handler = handler,
+                                             extra_data = extra_data,
+                                             silent = True )
+    return request_id
 
 
   def GetCommandRequest( self ):
@@ -559,7 +590,19 @@ class YouCompleteMe:
     self._AddSyntaxDataIfNeeded( extra_data )
     self._AddExtraConfDataIfNeeded( extra_data )
 
-    self.CurrentBuffer().SendParseRequest( extra_data )
+    # TODO: We actually get passed the buffer here, but only handle the
+    # _current_ buffer. That seems wrong and probably was always wrong. This
+    # implementation (for now) matches the historic behavior.
+    #
+    # FixMe the ClearSignatureHelp call below should areally be done in th viml
+    # layer, so that the request ID is cleared
+    def handler( buf ):
+      self.HandleFileParseRequest()
+      if self.ShouldResendFileParseRequest():
+        self.ClearSignatureHelp()
+        self.OnFileReadyToParse()
+
+    self.CurrentBuffer().SendParseRequest( extra_data, handler )
 
 
   def OnFileSave( self, saved_buffer_number ):
@@ -626,30 +669,6 @@ class YouCompleteMe:
       completion_request.OnCompleteDone()
 
 
-  def ResolveCompletionItem( self, item ):
-    # Note: As mentioned elsewhere, we replace the current completion request
-    # with a resolve request. It's not valid to have simultaneous resolve and
-    # completion requests, because the resolve request uses the request data
-    # from the last completion request and is therefore dependent on it not
-    # having changed.
-    #
-    # The result of this is that self.GetCurrentCompletionRequest() might return
-    # either a completion request of a resolve request and it's the
-    # responsibility of the vimscript code to ensure that it only does one at a
-    # time. This is handled by re-using the same poller for completions and
-    # resolves.
-    completion_request = self.GetCurrentCompletionRequest()
-    if not completion_request:
-      return False
-
-    request  = ResolveCompletionItem( completion_request, item )
-    if not request:
-      return False
-
-    self._latest_completion_request = request
-    return True
-
-
   def GetErrorCount( self ):
     return self.CurrentBuffer().GetErrorCount()
 
@@ -660,12 +679,6 @@ class YouCompleteMe:
 
   def _PopulateLocationListWithLatestDiagnostics( self ):
     return self.CurrentBuffer().PopulateLocationList()
-
-
-  def FileParseRequestReady( self ):
-    # Return True if server is not ready yet, to stop repeating check timer.
-    return ( not self.IsServerReady() or
-             self.CurrentBuffer().FileParseRequestReady() )
 
 
   def HandleFileParseRequest( self, block = False ):
