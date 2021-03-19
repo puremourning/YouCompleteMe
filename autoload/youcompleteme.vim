@@ -564,8 +564,10 @@ endfunction
 
 
 function! s:SetUpBufferMappings()
-  nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace) <cmd>call youcompleteme#FindSymbol( 'workspace' )<CR>
-  nnoremap <silent> <Plug>(YCMFindSymbolInDocument) <cmd>call youcompleteme#FindSymbol( 'document' )<CR>
+  nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace)
+        \ :call youcompleteme#FindSymbol( 'workspace' )<CR>
+  nnoremap <silent> <Plug>(YCMFindSymbolInDocument)
+        \ :call youcompleteme#FindSymbol( 'document' )<CR>
 endfunction
 
 
