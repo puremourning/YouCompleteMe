@@ -238,47 +238,61 @@ def PlaceSign( sign ):
 
 
 class DiagnosticMatch( namedtuple( 'DiagnosticMatch',
-                                   [ 'id', 'group', 'pattern' ] ) ):
+                                   [ 'id', 'group', 'pos_list' ] ) ):
   def __eq__( self, other ):
     return ( self.group == other.group and
-             self.pattern == other.pattern )
+             self.pos_list == other.pos_list )
 
 
 def GetDiagnosticMatchesInCurrentWindow():
   vim_matches = vim.eval( 'getmatches()' )
+
+  def MakePosList( m ):
+    pos_list = []
+    for i in range( 1, 9 ):
+      key = f'pos{ i }'
+      if key not in m:
+        break
+      pos_list.append( m[ key ] )
+    return pos_list
+
   return [ DiagnosticMatch( match[ 'id' ],
                             match[ 'group' ],
-                            match[ 'pattern' ] )
+                            MakePosList( match ) )
            for match in vim_matches if match[ 'group' ].startswith( 'Ycm' ) ]
 
 
 def AddDiagnosticMatch( match ):
-  # TODO: Use matchaddpos which is much faster given that we always are using a
-  # location rather than an actual pattern
-  return GetIntValue( f"matchadd('{ match.group }', '{ match.pattern }', -1)" )
+  return GetIntValue(
+    f"matchaddpos('{ match.group }', { json.dumps( match.pos_list ) }, -1)" )
 
 
 def RemoveDiagnosticMatch( match ):
-  return GetIntValue( f"matchdelete({ match.id })" )
+  return GetIntValue( f"matchdelete( { match.id } )" )
 
 
-def GetDiagnosticMatchPattern( line_num,
-                               column_num,
-                               line_end_num = None,
-                               column_end_num = None ):
+def GetDiagnosticMatchPosition( line_num,
+                                column_num,
+                                line_end_num = None,
+                                column_end_num = None ):
   line_num, column_num = LineAndColumnNumbersClamped( line_num, column_num )
   column_num = max( column_num, 1 )
 
   if line_end_num is None or column_end_num is None:
-    return f'\\%{ line_num }l\\%{ column_num }c'
+    return [ line_num, column_num ]
 
   # -1 and then +1 to account for column end not included in the range.
   line_end_num, column_end_num = LineAndColumnNumbersClamped(
       line_end_num, column_end_num - 1 )
   column_end_num = max( column_end_num + 1, 1 )
 
-  return ( f'\\%{ line_num }l\\%{ column_num }c\\_.\\{{-}}'
-           f'\\%{ line_end_num }l\\%{ column_end_num }c' )
+  start_line_byte = GetIntValue( vim.eval( f'line2byte( { line_num } )' ) )
+  end_line_byte = GetIntValue( vim.eval( f'line2byte( { line_end_num } )' ) )
+  start_byte = start_line_byte + column_num
+  end_byte = end_line_byte + column_end_num
+  len_in_bytes = end_byte - start_byte
+
+  return [ line_num, column_num, len_in_bytes ]
 
 
 # Clamps the line and column numbers so that they are not past the contents of

@@ -141,13 +141,15 @@ class DiagnosticInterface:
         group = ( 'YcmErrorSection' if _DiagnosticIsError( diag ) else
                   'YcmWarningSection' )
 
-        for pattern in _ConvertDiagnosticToMatchPatterns( diag ):
-          # The id doesn't matter for matches that we may add.
-          match = vimsupport.DiagnosticMatch( 0, group, pattern )
-          try:
-            matches_to_remove.remove( match )
-          except ValueError:
-            vimsupport.AddDiagnosticMatch( match )
+        match = vimsupport.DiagnosticMatch(
+          0,
+          group,
+          _ConvertDiagnosticToMatchPositions( diag ) )
+
+        try:
+          matches_to_remove.remove( match )
+        except ValueError:
+          vimsupport.AddDiagnosticMatch( match )
 
     for match in matches_to_remove:
       vimsupport.RemoveDiagnosticMatch( match )
@@ -205,27 +207,27 @@ def _NormalizeDiagnostic( diag ):
   return diag
 
 
-def _ConvertDiagnosticToMatchPatterns( diagnostic ):
-  patterns = []
+def _ConvertDiagnosticToMatchPositions( diagnostic ):
+  positions = []
 
   location_extent = diagnostic[ 'location_extent' ]
   if location_extent[ 'start' ][ 'line_num' ] <= 0:
     location = diagnostic[ 'location' ]
-    patterns.append( vimsupport.GetDiagnosticMatchPattern(
+    positions.append( vimsupport.GetDiagnosticMatchPosition(
       location[ 'line_num' ],
       location[ 'column_num' ] ) )
   else:
-    patterns.append( vimsupport.GetDiagnosticMatchPattern(
+    positions.append( vimsupport.GetDiagnosticMatchPosition(
       location_extent[ 'start' ][ 'line_num' ],
       location_extent[ 'start' ][ 'column_num' ],
       location_extent[ 'end' ][ 'line_num' ],
       location_extent[ 'end' ][ 'column_num' ] ) )
 
   for diagnostic_range in diagnostic[ 'ranges' ]:
-    patterns.append( vimsupport.GetDiagnosticMatchPattern(
+    positions.append( vimsupport.GetDiagnosticMatchPosition(
       diagnostic_range[ 'start' ][ 'line_num' ],
       diagnostic_range[ 'start' ][ 'column_num' ],
       diagnostic_range[ 'end' ][ 'line_num' ],
       diagnostic_range[ 'end' ][ 'column_num' ] ) )
 
-  return patterns
+  return positions
