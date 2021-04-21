@@ -215,7 +215,7 @@ function! youcompleteme#finder#FindSymbol( scope ) abort
 
   let s:find_symbol_status.id = popup_create( 'Type to query for stuff', opts )
 
-  " Kick off the rquest now
+  " Kick off the request now
   let s:find_symbol_status.waiting = 1
   if a:scope ==# 'document'
     call s:StartSpinner()

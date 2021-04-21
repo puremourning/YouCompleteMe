@@ -1150,7 +1150,7 @@ def OpenFilename( filename, options = {} ):
   - watch: automatically watch for changes (default: False). This is useful
   for logs;
   - position: set the position where the file is opened (default: start).
-  Choices are 'start', 'end'.
+  Choices are 'start' and 'end'.
   - mods: The vim <mods> for the command, such as :vertical"""
 
   # Set the options.
