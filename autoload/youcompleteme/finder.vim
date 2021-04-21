@@ -644,14 +644,9 @@ endfunction
 
 
 function! s:HandleWorkspaceSymbols( callback, results ) abort
-  let use_ycmd_filter_for_workspace = get(
-        \ g:,
-        \ 'ycm_refilter_workspace_symbols',
-        \ 1 )
-
   let results = s:ParseGoToResponse( a:results )
 
-  if use_ycmd_filter_for_workspace && !empty( results )
+  if g:ycm_refilter_workspace_symbols && !empty( results )
     let restuls = py3eval(
           \ 'ycm_state.FilterAndSortItems( '
           \ . ' vim.eval( "results" ),'
