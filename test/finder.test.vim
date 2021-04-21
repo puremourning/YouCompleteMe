@@ -294,8 +294,13 @@ function! Test_EmptySearch()
   call assert_equal( [ 0, 5, 7, 0 ], getpos( '.' ) )
 
   " We pop up a notification with some text in it
-  call assert_equal( 1, len( popup_list() ) )
-  let notification_id = popup_list()[ 0 ]
+  if exists( '*popup_list' )
+    call assert_equal( 1, len( popup_list() ) )
+  endif
+
+  " Old vim doesn't have popup_list, so hit-test the top-right corner which is
+  " where we pup the popu
+  let notification_id = popup_locate( 1, &columns - 1 )
   call assert_equal( [ 'Added 2 entries to quickfix list.' ],
                    \ getbufline( winbufnr( notification_id ), 1, '$' ) )
   " Wait for the notification to clear
@@ -347,7 +352,9 @@ function! Test_LeaveWindow_CancelSearch()
   call assert_equal( p, getpos( '.' ) )
 
   " No notifiaction
-  call assert_equal( 0, len( popup_list() ) )
+  if exists( '*popup_list' )
+    call assert_equal( 0, len( popup_list() ) )
+  endif
 
   delfunct PutQuery
   %bwipe!
