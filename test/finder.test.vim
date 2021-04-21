@@ -219,15 +219,16 @@ function! Test_EmptySearch()
     call FeedAndCheckAgain( 'tiat', funcref( 'TestUpDownSelect' ) )
   endfunction
 
-  function TestUpDownSelect( ... )
-    let id = youcompleteme#finder#GetState().id
-    let o = popup_getoptions( id )
+  let popup_id = -1
+  function TestUpDownSelect( ... ) closure
+    let popup_id = youcompleteme#finder#GetState().id
+    let o = popup_getoptions( popup_id )
 
     call WaitForAssert( { ->
           \ assert_equal( ' [X] Search for symbol: tiat ',
           \ o.title  ) },
           \ 10000 )
-    call WaitForAssert( { -> assert_equal( 2, line( '$', id ) ) } )
+    call WaitForAssert( { -> assert_equal( 2, line( '$', popup_id ) ) } )
 
     " FIXME: Doing all these tests with only 2 entries means that it's not
     " really checking the behaviour completely accurately, we should at least
@@ -286,10 +287,21 @@ function! Test_EmptySearch()
   " <Leader> is \ - this calls <Plug>(YCMFindSymbolInWorkspace)
   call FeedAndCheckMain( '\\w', funcref( 'PutQuery' ) )
 
+  call WaitForAssert( { -> assert_equal( {}, popup_getpos( popup_id ) ) } )
   call WaitForAssert( { -> assert_equal( l, winlayout() ) } )
   call WaitForAssert( { -> assert_equal( original_win, winnr() ) } )
   call assert_equal( b, bufnr() )
   call assert_equal( [ 0, 5, 7, 0 ], getpos( '.' ) )
+
+  " We pop up a notification with some text in it
+  call assert_equal( 1, len( popup_list() ) )
+  let notification_id = popup_list()[ 0 ]
+  call assert_equal( [ 'Added 2 entries to quickfix list.' ],
+                   \ getbufline( winbufnr( notification_id ), 1, '$' ) )
+  " Wait for the notification to clear
+  call WaitForAssert(
+        \ { -> assert_equal( {}, popup_getpos( notification_id ) ) },
+        \ 10000 )
 
   delfunct PutQuery
   delfunct SelectNothing
@@ -333,6 +345,9 @@ function! Test_LeaveWindow_CancelSearch()
 
   " Retuned to just where we started
   call assert_equal( p, getpos( '.' ) )
+
+  " No notifiaction
+  call assert_equal( 0, len( popup_list() ) )
 
   delfunct PutQuery
   %bwipe!
