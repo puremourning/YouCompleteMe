@@ -239,6 +239,7 @@ function! youcompleteme#finder#FindSymbol( scope ) abort
     autocmd!
     autocmd TextChanged,TextChangedI <buffer> call s:OnQueryTextChanged()
     autocmd WinLeave <buffer> call s:Cancel()
+    autocmd CmdLineEnter <buffer> call s:Cancel()
   augroup END
   startinsert
 endfunction
