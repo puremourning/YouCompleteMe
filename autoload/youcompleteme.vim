@@ -209,6 +209,11 @@ function! youcompleteme#Enable()
           \   'priority':  50,
           \ } )
   endif
+
+  nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace)
+        \ :call youcompleteme#finder#FindSymbol( 'workspace' )<CR>
+  nnoremap <silent> <Plug>(YCMFindSymbolInDocument)
+        \ :call youcompleteme#finder#FindSymbol( 'document' )<CR>
 endfunction
 
 
@@ -563,14 +568,6 @@ function! s:EnableCompletingInCurrentBuffer()
 endfunction
 
 
-function! s:SetUpBufferMappings()
-  nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace)
-        \ :call youcompleteme#finder#FindSymbol( 'workspace' )<CR>
-  nnoremap <silent> <Plug>(YCMFindSymbolInDocument)
-        \ :call youcompleteme#finder#FindSymbol( 'document' )<CR>
-endfunction
-
-
 function s:StopPoller( poller ) abort
   call timer_stop( a:poller.id )
   let a:poller.id = -1
@@ -663,7 +660,6 @@ function! s:OnFileTypeSet()
 
   call s:SetUpCompleteopt()
   call s:EnableCompletingInCurrentBuffer()
-  call s:SetUpBufferMappings()
   call s:StartMessagePoll()
   call s:EnableAutoHover()
 
@@ -689,7 +685,6 @@ function! s:OnBufferEnter()
 
   call s:SetUpCompleteopt()
   call s:EnableCompletingInCurrentBuffer()
-  call s:SetUpBufferMappings()
 
   py3 ycm_state.OnBufferVisit()
   " Last parse may be outdated because of changes from other buffers. Force a
@@ -1229,7 +1224,7 @@ function! youcompleteme#LogsComplete( arglead, cmdline, cursorpos )
 endfunction
 
 
-function! youcompleteme#GetCommandResponse( ... )
+function! youcompleteme#GetCommandResponse( ... ) abort
   if !s:AllowedToCompleteInCurrentBuffer()
     return ''
   endif
@@ -1242,7 +1237,7 @@ function! youcompleteme#GetCommandResponse( ... )
 endfunction
 
 
-function! youcompleteme#GetCommandResponseAsync( callback, ... )
+function! youcompleteme#GetCommandResponseAsync( callback, ... ) abort
   if !s:AllowedToCompleteInCurrentBuffer()
     eval a:callback( '' )
     return
@@ -1265,7 +1260,8 @@ function! youcompleteme#GetCommandResponseAsync( callback, ... )
         \ function( 's:PollCommand', [ 'StringResponse', a:callback ] ) )
 endfunction
 
-function! youcompleteme#GetRawCommandResponseAsync( callback, ... )
+
+function! youcompleteme#GetRawCommandResponseAsync( callback, ... ) abort
   if !s:AllowedToCompleteInCurrentBuffer()
     eval a:callback( { 'error': 'ycm not allowed in buffer' } )
     return
@@ -1288,7 +1284,8 @@ function! youcompleteme#GetRawCommandResponseAsync( callback, ... )
         \ function( 's:PollCommand', [ 'Response', a:callback ] ) )
 endfunction
 
-function! s:PollCommand( response_func, callback, id )
+
+function! s:PollCommand( response_func, callback, id ) abort
   if py3eval( 'ycm_state.GetCommandRequest() is None' )
     " Possible in case of race conditions and things like RestartServer
     " But particualrly in the tests
@@ -1309,6 +1306,7 @@ function! s:PollCommand( response_func, callback, id )
 
   eval a:callback( result )
 endfunction
+
 
 function! s:CompleterCommand( mods, count, line1, line2, ... )
   py3 ycm_state.SendCommandRequest(
