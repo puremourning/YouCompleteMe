@@ -911,6 +911,7 @@ function! s:IdentifierFinishedOperations()
   if !py3eval( 'base.CurrentIdentifierFinished()' )
     return
   endif
+  call s:StopPoller( s:pollers.completion )
   py3 ycm_state.OnCurrentIdentifierFinished()
   let s:force_semantic = 0
   let s:completion = s:default_completion
@@ -1117,6 +1118,22 @@ function! s:Complete()
     let s:completion.completion_start_column +=
           \ col( '.' ) - s:completion.column
   endif
+
+
+  " bail out if the current cursor position is before the completion start
+  " column. that clearly indicates that the cursor moved unexpectedly
+  if col( '.' ) < s:completion.completion_start_column
+    return
+  endif
+
+  " If the text from the start column to the current cursor position is not an
+  " identifier, then abort - the cursor must have moved, or the user entered a
+  " non-identifier character while we were waiting for the completion result
+  if !py3eval( 'base.StillWritingIdentifierFrom( '
+             \. 'int( vim.eval( "s:completion.completion_start_column" ) ) )' )
+    return
+  endif
+
   if len( s:completion.completions )
     let old_completeopt = &completeopt
     set completeopt+=noselect

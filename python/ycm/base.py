@@ -19,7 +19,7 @@ import os
 import json
 
 from ycm import vimsupport, paths
-from ycmd import identifier_utils
+from ycmd import identifier_utils, utils
 
 YCM_VAR_PREFIX = 'ycm_'
 
@@ -85,6 +85,26 @@ def LastEnteredCharIsIdentifierChar():
   return (
     identifier_utils.StartOfLongestIdentifierEndingAtIndex(
         line, current_column, filetype ) != current_column )
+
+
+def StillWritingIdentifierFrom( start_col_byte ):
+  # start_col_byte is 1-based byte offset
+
+  # end_codepoint_index is 0-based
+  line, end_codepoint_index = vimsupport.CurrentLineContentsAndCodepointColumn()
+  # ByteOffsetToCodepointOffset takes and returns 1-based offsets, so we
+  # decrement to get 0-based start_codepoint_index
+  start_codepoint_index = utils.ByteOffsetToCodepointOffset(
+    line,
+    start_col_byte ) - 1
+
+  if end_codepoint_index < start_codepoint_index:
+    return False
+
+  return identifier_utils.StartOfLongestIdentifierEndingAtIndex(
+    line,
+    end_codepoint_index,
+    vimsupport.CurrentFiletypes()[ 0 ] ) <= start_codepoint_index
 
 
 def AdjustCandidateInsertionText( candidates ):
