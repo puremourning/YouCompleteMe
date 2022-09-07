@@ -86,3 +86,14 @@ def _EndsWithPython( path ):
 
 def PathToServerScript():
   return os.path.join( DIR_OF_YCMD, 'ycmd' )
+
+
+def PathToServer():
+  return os.path.join( DIR_OF_CURRENT_SCRIPT,
+                       '..',
+                       '..',
+                       '..',
+                       'build',
+                       'Debug',
+                       'src',
+                       'ycmd' )

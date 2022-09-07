@@ -320,6 +320,11 @@ def _ToUtf8Json( data ):
 
 
 def _ValidateResponseObject( response, response_text ):
+  # TODO REMOVE: hack to avoid hmac validation while server doesn't implement it
+  # Switch to using stdin/out for comms rather than socket and don't bother with
+  # hmac at all!
+  return
+
   if not response_text:
     return
   our_hmac = CreateHmac( response_text, BaseRequest.hmac_secret )

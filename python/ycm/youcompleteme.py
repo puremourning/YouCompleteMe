@@ -157,29 +157,23 @@ class YouCompleteMe:
       vimsupport.PostVimMessage( error_message )
       return
 
-    args = [ python_interpreter,
-             paths.PathToServerScript(),
-             f'--port={ server_port }',
-             f'--options_file={ options_file.name }',
-             f'--log={ self._user_options[ "log_level" ] }',
-             f'--idle_suicide_seconds={ SERVER_IDLE_SUICIDE_SECONDS }' ]
+    args = [
+      paths.PathToServer(),
+      f'--port={ server_port }',
+      #  f'--options_file={ options_file.name }',
+      #  f'--log={ self._user_options[ "log_level" ] }',
+      #  f'--idle_suicide_seconds={ SERVER_IDLE_SUICIDE_SECONDS }'
+    ]
 
     self._server_stdout = utils.CreateLogfile(
         SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stdout' ) )
     self._server_stderr = utils.CreateLogfile(
         SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stderr' ) )
-    args.append( f'--stdout={ self._server_stdout }' )
-    args.append( f'--stderr={ self._server_stderr }' )
+    args.append( f'--out={ self._server_stdout }' )
+    args.append( f'--err={ self._server_stderr }' )
 
-    if self._user_options[ 'keep_logfiles' ]:
-      args.append( '--keep_logfiles' )
-
-    if 'YCM_WITH_PTVSD' in os.environ:
-      args[ 1:1 ] = [ '-m', 'ptvsd',
-                      '--host', 'localhost',
-                      '--port', '1234',
-                      '--wait',
-                      '--no-subprocesses' ]
+    # if self._user_options[ 'keep_logfiles' ]:
+    #   args.append( '--keep_logfiles' )
 
     self._logger.debug( 'Starting ycmd with: %s', args )
 
