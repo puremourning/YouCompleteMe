@@ -160,7 +160,7 @@ class YouCompleteMe:
     args = [
       paths.PathToServer(),
       f'--port={ server_port }',
-      #  f'--options_file={ options_file.name }',
+      f'--options_file={ options_file.name }',
       #  f'--log={ self._user_options[ "log_level" ] }',
       #  f'--idle_suicide_seconds={ SERVER_IDLE_SUICIDE_SECONDS }'
     ]

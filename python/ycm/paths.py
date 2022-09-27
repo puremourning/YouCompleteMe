@@ -89,11 +89,11 @@ def PathToServerScript():
 
 
 def PathToServer():
-  return os.path.join( DIR_OF_CURRENT_SCRIPT,
-                       '..',
-                       '..',
-                       '..',
-                       'build',
-                       'Debug',
-                       'src',
-                       'ycmd' )
+  return os.path.normpath( os.path.join( DIR_OF_CURRENT_SCRIPT,
+                                         '..',
+                                         '..',
+                                         '..',
+                                         'build',
+                                         'Debug',
+                                         'src',
+                                         'ycmd' ) )

@@ -9,6 +9,8 @@ set encoding=utf-8
 " But remember that neovim is not officially supported, so please reproduce in
 " Vim.
 
+syn on
+
 " Enable debugging
 let g:ycm_keep_logfiles = 1
 let g:ycm_log_level = 'debug'
