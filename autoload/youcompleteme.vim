@@ -473,13 +473,13 @@ function! s:SetUpSyntaxHighlighting()
   if s:PropertyTypeNotDefined( 'YcmVirtDiagError' )
     call prop_type_add( 'YcmVirtDiagError', {
           \ 'highlight': 'YcmErrorText',
-          \ 'priority': 20,
+          \ 'priority': -20,
           \ 'combine': 0 } )
   endif
   if s:PropertyTypeNotDefined( 'YcmVirtDiagWarning' )
     call prop_type_add( 'YcmVirtDiagWarning', {
           \ 'highlight': 'YcmWarningText',
-          \ 'priority': 19,
+          \ 'priority': -21,
           \ 'combine': 0 } )
   endif
 
@@ -487,7 +487,7 @@ function! s:SetUpSyntaxHighlighting()
   if s:PropertyTypeNotDefined( 'YcmVirtDiagPadding' )
     call prop_type_add( 'YcmVirtDiagPadding', {
           \ 'highlight': 'YcmInvisible',
-          \ 'priority': 100,
+          \ 'priority': -19,
           \ 'combine': 1 } )
   endif
 
