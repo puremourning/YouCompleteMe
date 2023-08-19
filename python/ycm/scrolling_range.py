@@ -103,6 +103,9 @@ class ScrollingBufferRange( object ):
     """When processing results, we may receive a wider range than requested. In
     that case, grow our 'last requested' range to minimise requesting more
     frequently than we need to."""
+    if self._last_requested_range is None:
+      return
+
     # Note: references (pointers) so no need to re-assign
     rmin = self._last_requested_range[ 'start' ]
     rmax = self._last_requested_range[ 'end' ]
