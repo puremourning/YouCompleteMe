@@ -11,6 +11,8 @@ set encoding=utf-8
 
 syn on
 
+let g:ycm_clangd_binary_path = '/opt/homebrew/opt/llvm/bin/clangd'
+
 " Enable debugging
 let g:ycm_keep_logfiles = 1
 let g:ycm_log_level = 'debug'
