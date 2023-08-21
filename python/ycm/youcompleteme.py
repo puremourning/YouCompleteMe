@@ -110,7 +110,7 @@ class YouCompleteMe:
     self._ycmd_keepalive.Start()
 
 
-  def _SetUpServer( self ):
+  def _SetUpServer( self, server_port=None ):
     self._available_completers = {}
     self._user_notified_about_crash = False
     self._filetypes_with_keywords_loaded = set()
@@ -137,48 +137,51 @@ class YouCompleteMe:
     options_dict[ 'server_keep_logfiles' ] = self._user_options[
       'keep_logfiles' ]
 
-    # The temp options file is deleted by ycmd during startup.
-    with NamedTemporaryFile( delete = False, mode = 'w+' ) as options_file:
-      json.dump( options_dict, options_file )
+    if server_port:
+      self._server_stderr = None
+      self._server_stdout = None
+      self._server_popen = None
+      self._user_notified_about_crash = True
 
-    server_port = utils.GetUnusedLocalhostPort()
+      BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
+      BaseRequest.hmac_secret = hmac_secret
 
-    BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
-    BaseRequest.hmac_secret = hmac_secret
+      BaseRequest().PostDataToHandlerAsync( {
+        'user_options': options_dict
+      }, 'initialize' )
 
-    try:
-      python_interpreter = paths.PathToPythonInterpreter()
-    except RuntimeError as error:
-      error_message = (
-        f"Unable to start the ycmd server. { str( error ).rstrip( '.' ) }. "
-        "Correct the error then restart the server "
-        "with ':YcmRestartServer'." )
-      self._logger.exception( error_message )
-      vimsupport.PostVimMessage( error_message )
-      return
+    else:
+      # The temp options file is deleted by ycmd during startup.
+      with NamedTemporaryFile( delete = False, mode = 'w+' ) as options_file:
+        json.dump( options_dict, options_file )
 
-    args = [
-      paths.PathToServer(),
-      f'--port={ server_port }',
-      f'--options_file={ options_file.name }',
-      #  f'--log={ self._user_options[ "log_level" ] }',
-      #  f'--idle_suicide_seconds={ SERVER_IDLE_SUICIDE_SECONDS }'
-    ]
+      server_port = utils.GetUnusedLocalhostPort()
 
-    self._server_stdout = utils.CreateLogfile(
-        SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stdout' ) )
-    self._server_stderr = utils.CreateLogfile(
-        SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stderr' ) )
-    args.append( f'--out={ self._server_stdout }' )
-    args.append( f'--err={ self._server_stderr }' )
+      BaseRequest.server_location = 'http://127.0.0.1:' + str( server_port )
+      BaseRequest.hmac_secret = hmac_secret
 
-    # if self._user_options[ 'keep_logfiles' ]:
-    #   args.append( '--keep_logfiles' )
+      args = [
+        paths.PathToServer(),
+        f'--port={ server_port }',
+        f'--options_file={ options_file.name }',
+        #  f'--log={ self._user_options[ "log_level" ] }',
+        #  f'--idle_suicide_seconds={ SERVER_IDLE_SUICIDE_SECONDS }'
+      ]
 
-    self._logger.debug( 'Starting ycmd with: %s', args )
+      self._server_stdout = utils.CreateLogfile(
+          SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stdout' ) )
+      self._server_stderr = utils.CreateLogfile(
+          SERVER_LOGFILE_FORMAT.format( port = server_port, std = 'stderr' ) )
+      args.append( f'--out={ self._server_stdout }' )
+      args.append( f'--err={ self._server_stderr }' )
 
-    self._server_popen = utils.SafePopen( args, stdin_windows = PIPE,
-                                          stdout = PIPE, stderr = PIPE )
+      # if self._user_options[ 'keep_logfiles' ]:
+      #   args.append( '--keep_logfiles' )
+
+      self._logger.debug( 'Starting ycmd with: %s', args )
+
+      self._server_popen = utils.SafePopen( args, stdin_windows = PIPE,
+                                            stdout = PIPE, stderr = PIPE )
 
 
   def _SetUpLogging( self ):
@@ -273,13 +276,20 @@ class YouCompleteMe:
 
 
   def _ShutdownServer( self ):
-    SendShutdownRequest()
+    if self._server_popen is not None:
+      SendShutdownRequest()
 
 
   def RestartServer( self ):
     vimsupport.PostVimMessage( 'Restarting ycmd server...' )
     self._ShutdownServer()
     self._SetUpServer()
+
+
+  def ConnectToServer( self, port ):
+    vimsupport.PostVimMessage( 'Restarting ycmd server...' )
+    self._ShutdownServer()
+    self._SetUpServer( server_port=port )
 
 
   def SendCompletionRequest( self, force_semantic = False ):

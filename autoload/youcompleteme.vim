@@ -1354,6 +1354,7 @@ endfunction
 
 function! s:SetUpCommands()
   command! YcmRestartServer call s:RestartServer()
+  command! -nargs=1 YcmConnectToServer call s:ConnectToServer( <f-args> )
   command! YcmDebugInfo call s:DebugInfo()
   command! -nargs=* -complete=custom,youcompleteme#LogsComplete -count=0
         \ YcmToggleLogs call s:ToggleLogs( <f-count>,
@@ -1376,6 +1377,22 @@ function! s:RestartServer()
   call s:SetUpOptions()
 
   py3 ycm_state.RestartServer()
+
+  call s:StopPoller( s:pollers.receive_messages )
+  call s:StopPoller( s:pollers.command )
+  call s:ClearSignatureHelp()
+
+  call s:StopPoller( s:pollers.server_ready )
+  let s:pollers.server_ready.id = timer_start(
+        \ s:pollers.server_ready.wait_milliseconds,
+        \ function( 's:PollServerReady' ) )
+endfunction
+
+
+function! s:ConnectToServer( port )
+  call s:SetUpOptions()
+
+  py3 ycm_state.ConnectToServer( int( vim.eval( "a:port" ) ) )
 
   call s:StopPoller( s:pollers.receive_messages )
   call s:StopPoller( s:pollers.command )
