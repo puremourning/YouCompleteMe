@@ -344,6 +344,28 @@ function! s:HandleKeyPress( id, key ) abort
     let redraw = 0
     let requery = 1
     let handled = 1
+  elseif a:key ==# "\<LeftMouse>"
+    " Select row
+    let mpos = getmousepos()
+    echom 'click' string( mpos )
+    if mpos.winid == a:id &&
+          \ mpos.line > 0 &&
+          \ mpos.line <= len( s:find_symbol_status.results )
+      let s:find_symbol_status.selected = mpos.line - 1
+      let handled = 1
+      let redraw = 1
+    endif
+  elseif a:key ==# "\<2-LeftMouse>"
+    " Jump to
+    let mpos = getmousepos()
+    echom 'doubleclick' string( mpos )
+    if mpos.winid == a:id &&
+          \ mpos.line > 0 &&
+          \ mpos.line <= len( s:find_symbol_status.results )
+      let s:find_symbol_status.selected = mpos.line - 1
+      call popup_close( a:id, s:find_symbol_status.selected )
+      let handled = 1
+    endif
   endif
 
   if requery
