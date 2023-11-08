@@ -132,6 +132,7 @@ function! youcompleteme#finder#FindSymbol( scope ) abort
   let s:find_symbol_status = {
         \ 'selected': -1,
         \ 'query': '',
+        \ 'post_filter': [],
         \ 'results': [],
         \ 'raw_results': v:none,
         \ 'all_filetypes': v:true,
@@ -214,6 +215,19 @@ function! s:OnQueryTextChanged() abort
   let bufnr = s:find_symbol_status.prompt_bufnr
   let query = getbufline( bufnr, '$' )[ 0 ]
   let s:find_symbol_status.query = query[ len( s:prompt ) : ]
+
+  if !empty(s:find_symbol_status.query)
+    let sep_pos = match( s:find_symbol_status.query, '\m\s*/\s*' )
+    if sep_pos > -1
+      let sep_end = matchend( s:find_symbol_status.query, '\m\s*/\s*' )
+      let s:find_symbol_status.post_filter =
+            \ strpart( s:find_symbol_status.query, sep_end)
+      let s:find_symbol_status.query =
+            \ strpart( s:find_symbol_status.query, 0, sep_pos )
+    else
+      let s:find_symbol_status.post_filter = []
+    endif
+  endif
 
   " really, re-query if we can
   call s:RequeryFinderPopup( v:true )
@@ -528,6 +542,16 @@ function! s:RedrawFinderPopup() abort
 
       call add( buffer, { 'text': line, 'props': props } )
     endfor
+
+    if !empty(s:find_symbol_status.post_filter)
+      for f in s:find_symbol_status.post_filter
+        if empty(buffer)
+          break
+        endif
+
+        let buffer = matchfuzzy( buffer, f, #{ matchseq: 1, key: 'text' } )
+      endfor
+    endif
 
     call popup_settext( s:find_symbol_status.id, buffer )
   endif
