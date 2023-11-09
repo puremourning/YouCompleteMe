@@ -217,16 +217,13 @@ function! s:OnQueryTextChanged() abort
   let s:find_symbol_status.query = query[ len( s:prompt ) : ]
 
   if !empty(s:find_symbol_status.query)
-    let sep_pos = match( s:find_symbol_status.query, '\m\s*/\s*' )
-    if sep_pos > -1
-      let sep_end = matchend( s:find_symbol_status.query, '\m\s*/\s*' )
-      let s:find_symbol_status.post_filter =
-            \ strpart( s:find_symbol_status.query, sep_end)
-      let s:find_symbol_status.query =
-            \ strpart( s:find_symbol_status.query, 0, sep_pos )
-    else
-      let s:find_symbol_status.post_filter = []
-    endif
+    " Split on any / that's not preceded by a \
+    let words = split( s:find_symbol_status.query, '\s*\\\@<!/\s*')
+    let s:find_symbol_status.query = words[0]
+    let s:find_symbol_status.post_filter = words[1:]
+    " Squish out any '\/' that we are left with
+    call map( s:find_symbol_status.post_filter,
+          \ { _, x -> substitute( x, '\\/', '/', 'g' ) } )
   endif
 
   " really, re-query if we can
@@ -405,6 +402,40 @@ endfunction
 
 " Results handling and re-query {{{
 
+function! s:ExtractTextForFilter( result ) abort
+  if a:result->has_key( 'extra_data' )
+    let kind = a:result[ 'extra_data' ][ 'kind' ]
+    let name = a:result[ 'extra_data' ][ 'name' ]
+    let desc = kind .. ': ' .. name
+  else
+    let desc = a:result[ 'description' ]
+  endif
+
+  let line_num = a:result[ 'line_num' ]
+  let path = fnamemodify( a:result[ 'filepath' ], ':.' )
+           \ .. ':'
+           \ .. line_num
+
+  let filetype = a:result[ 'filetype' ]
+  return desc .. ' ' .. path .. ' ' .. filetype
+endfunction
+
+function! s:PostFilter( results ) abort
+  let results = a:results
+  if !empty(s:find_symbol_status.post_filter)
+    for filter in s:find_symbol_status.post_filter
+      " TODO: Bug, we only filter the display, not the actual results, so the
+      " selected result and the display are out of sync
+      let results = matchfuzzy(
+            \ results,
+            \ filter,
+            \ #{ matchseq: 1, key: 'filterable_text' } )
+    endfor
+  endif
+
+  return results
+endfunction
+
 " Render a set of results returned from the filter/search function
 function! s:HandleSymbolSearchResults( results ) abort
   let s:find_symbol_status.results = []
@@ -543,16 +574,6 @@ function! s:RedrawFinderPopup() abort
       call add( buffer, { 'text': line, 'props': props } )
     endfor
 
-    if !empty(s:find_symbol_status.post_filter)
-      for f in s:find_symbol_status.post_filter
-        if empty(buffer)
-          break
-        endif
-
-        let buffer = matchfuzzy( buffer, f, #{ matchseq: 1, key: 'text' } )
-      endfor
-    endif
-
     call popup_settext( s:find_symbol_status.id, buffer )
   endif
 
@@ -633,6 +654,9 @@ function! s:ParseGoToResponse( filetype, results ) abort
       \   'key': r->get( 'extra_data', {} )->get( 'name', r[ 'description' ] ),
       \   'filetype': a:filetype
       \ } ) } )
+  call map( results, { _, r -> extend( r, {
+        \ 'filterable_text': s:ExtractTextForFilter( r )
+        \ } ) } )
   return results
 endfunction
 
@@ -787,7 +811,7 @@ function! s:HandleWorkspaceSymbols( filetype, results ) abort
   if !waiting
     call s:EndRequest()
   endif
-  eval s:HandleSymbolSearchResults( results )
+  eval s:HandleSymbolSearchResults( s:PostFilter( results ) )
 endfunction
 
 " }}}
@@ -814,7 +838,7 @@ function! s:SearchDocument( query, new_query ) abort
         \ . ' "key",'
         \ . ' vim.eval( "a:query" ) )' )
 
-  eval s:HandleSymbolSearchResults( response )
+  eval s:HandleSymbolSearchResults( s:PostFilter( response ) )
 endfunction
 
 
