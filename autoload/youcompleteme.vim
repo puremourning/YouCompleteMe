@@ -73,6 +73,12 @@ let s:pollers = {
       \     'wait_milliseconds': 100,
       \   },
       \ }
+let s:bouncers = {
+      \     'win_scrolled': {
+      \         'wait_milliseconds': 100,
+      \         'id': -1,
+      \     }
+      \ }
 let s:last_char_inserted_by_user = v:true
 let s:enable_hover = 0
 let s:cursorhold_popup = -1
@@ -1013,16 +1019,33 @@ function! s:OnCursorMovedNormalMode()
   py3 ycm_state.OnCursorMoved()
 endfunction
 
+function! s:_OnDebounceTimer( bouncer, callback ) abort
+    let a:bouncer.id = -1
+    eval a:callback()
+endfunction
+
+function! s:Debounce( bouncer, callback ) abort
+    if a:bouncer.id != -1
+        call timer_stop( a:bouncer.id )
+        let a:bouncer.id = -1
+    endif
+    let a:bouncer.id = timer_start( a:bouncer.wait_milliseconds,
+                \ { id -> s:_OnDebounceTimer( a:bouncer, a:callback ) } )
+endfunction
+
+function! s:_DoWinScrolled(bufnr)
+  call s:UpdateSemanticHighlighting( a:bufnr, 0, 0 )
+  call s:UpdateInlayHints( a:bufnr, 0, 0 )
+endfunction
 
 function! s:OnWinScrolled()
   if !s:AllowedToCompleteInCurrentBuffer()
     return
   endif
   let bufnr = winbufnr( expand( '<afile>' ) )
-  call s:UpdateSemanticHighlighting( bufnr, 0, 0 )
-  call s:UpdateInlayHints( bufnr, 0, 0 )
+  call s:Debounce( s:bouncers.win_scrolled,
+                 \ function( 's:_DoWinScrolled', [ bufnr ] ) )
 endfunction
-
 
 function! s:OnTextChangedNormalMode()
   if !s:AllowedToCompleteInCurrentBuffer()
