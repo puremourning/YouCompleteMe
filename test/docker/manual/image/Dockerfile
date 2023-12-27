@@ -1,7 +1,8 @@
 ARG YCM_PYTHON=py3
 ARG ARCH=x86_64
+ARG CI_TAG=test
 
-FROM youcompleteme/ycm-vim-${ARCH}-${YCM_PYTHON}:test
+FROM youcompleteme/ycm-vim-${ARCH}-${YCM_PYTHON}:${CI_TAG}
 
 RUN apt-get update && \
   apt-get -y --no-install-recommends install less && \

@@ -2,6 +2,8 @@
 
 set -e
 
+CI_TAG=${YCM_CI_TAG:-test}
+
 if [ "$1" = "--continue" ]; then
   OPTS=""
 else
@@ -10,6 +12,6 @@ fi
 
 ARCH=$(uname -m)
 
-docker build ${OPTS} -t youcompleteme/ycm-vim-${ARCH}-py3:test \
+docker build ${OPTS} -t youcompleteme/ycm-vim-${ARCH}-py3:${CI_TAG} \
                      --build-arg YCM_VIM_PYTHON=python3 \
                      image/
