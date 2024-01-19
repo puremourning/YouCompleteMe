@@ -110,7 +110,7 @@ class CompletionRequest( BaseRequest ):
 
 
   def _OnCompleteDone_Csharp( self ):
-    extra_data = self._GetCompletionExtraData()
+    extra_data = self._GetCompletionExtraData() or {}
     namespace = extra_data.get( 'required_namespace_import' )
     if not namespace:
       return
