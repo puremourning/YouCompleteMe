@@ -81,6 +81,17 @@ def _HandlePollResponse( response, diagnostics_handler ):
         diagnostics_handler.UpdateWithNewDiagnosticsForFile(
           notification[ 'filepath' ],
           notification[ 'diagnostics' ] )
+      elif 'action' in notification:
+        if notification[ 'action' ] == 'showDocument':
+          _logger.info( "Opening document %s", notification[ 'uri' ] )
+          from ycm import web_browser
+          web_browser.LaunchWebBrowser(
+            notification[ 'uri' ],
+            selection = notification.get( 'selection' ))
+        else:
+          _logger.warn( "Unknown action: %s", notification[ 'action' ] )
+      else:
+        _logger.warn( "Unknown notification: %s", notification )
   elif response is False:
     # Don't keep polling for this file
     return False
