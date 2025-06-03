@@ -1182,6 +1182,14 @@ def ReplaceChunk( start,
   # there is actually no new line. When this happens, recompute the end position
   # of where the chunk is applied and remove all trailing characters in the
   # chunk.
+  # But if the server sent an edit that starts _after_ our real buffer ends,
+  # we're in cookoo land, so create this fake line and hope. This is super
+  # important because we apply edits bottom-to-top and LSP servers can assume
+  # they can edit the "empty last line", then delete the punultimate line when
+  # changing the final line in the buffer.
+  while start_line >= len( vim_buffer ):
+    vim_buffer.append( '' )
+
   if end_line >= len( vim_buffer ):
     end_column = len( ToBytes( vim_buffer[ -1 ] ) )
     end_line = len( vim_buffer ) - 1
