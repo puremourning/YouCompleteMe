@@ -791,6 +791,10 @@ function! youcompleteme#FormatPreFileSave()
   YcmCompleter Format
 endfunction
 
+function! youcompleteme#EnableFormatOnSaveInThisBuffer() abort
+    let b:ycm_format_on_save=1
+    autocmd BufWritePre,FileWritePre <buffer> call youcompleteme#FormatPreFileSave()
+endfunction
 
 function! s:AbortAutohoverRequest() abort
   if g:ycm_auto_hover ==# 'CursorHold' && s:enable_hover
