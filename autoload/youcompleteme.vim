@@ -1427,6 +1427,7 @@ function! s:SetUpCommands()
         \                                      <line2>,
         \                                      <f-args>)
   command! YcmDiags call s:ShowDiagnostics()
+  command! -nargs=* YcmClearDiags call s:ClearDiagnostics( <f-args> )
   command! -nargs=? YcmShowDetailedDiagnostic
         \ call s:ShowDetailedDiagnostic( <f-args> )
   command! YcmForceCompileAndDiagnostics call s:ForceCompileAndDiagnostics()
@@ -1616,6 +1617,19 @@ function! youcompleteme#OpenGoToList()
         \ "'WARNING: youcompleteme#OpenGoToList function is deprecated. " .
         \ "Do NOT use it.'" )
   py3 vimsupport.OpenQuickFixList( True, True )
+endfunction
+
+
+function! s:ClearDiagnostics( ... ) abort
+  if index( a:000, 'all' ) >= 0
+    " Clear diagnostics for all buffers
+    py3 <<trim EOF
+      for buf in vim.buffers:
+        ycm_state.ClearDiagnosticsUI( buffer.numer )
+    EOF
+  else
+    py3 ycm_state.ClearDiagnosticsUI( vim.current.buffer.number )
+  endif
 endfunction
 
 
