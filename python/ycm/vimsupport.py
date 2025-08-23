@@ -1284,7 +1284,7 @@ def OpenFileInPreviewWindow( filename, modifiers ):
   vim.command( f'silent!{ modifiers } pedit! { filename }' )
 
 
-def WriteToPreviewWindow( message, modifiers ):
+def WriteToPreviewWindow( message, modifiers, syntax=None ):
   """ Display the supplied message in the preview window """
 
   # This isn't something that comes naturally to Vim. Vim only wants to show
@@ -1317,6 +1317,9 @@ def WriteToPreviewWindow( message, modifiers ):
     # We need to prevent closing the window causing a warning about unsaved
     # file, so we pretend to Vim that the buffer has not been changed.
     vim.current.buffer.options[ 'modified' ]   = False
+
+    if syntax:
+      vim.command( f'setlocal syntax={ syntax }' )
 
     JumpToPreviousWindow()
   else:
